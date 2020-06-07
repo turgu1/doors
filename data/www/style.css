@@ -1,0 +1,58 @@
+.button {
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.button1 { background-color: #4CAF50; } /* Green */
+.button2 { background-color: #008CBA; } /* Blue */
+.button3 { background-color: #DC143C; } /* Red */
+
+form.form-style, div.form-table {
+  display: table;
+}
+
+div.form-style {
+  display: table-row;
+}
+
+div.form-header {
+  display: table-header-group;
+}
+
+div.form-footer {
+  display: table-footer-group;
+}
+
+div.form-body {
+  display: table-row-group;
+}
+
+div.form-style>label, div.form-style>input, div.form-style>div {
+  display: table-cell;
+  margin-bottom: 10px;
+  margin-right: 5px;
+}
+
+label, .label {
+  padding-right: 10px;
+}
+
+.submit {
+  width: 5em;
+}
+
+input {
+  width: 10em;
+}
+
+.small {
+  width: 5em;
+}

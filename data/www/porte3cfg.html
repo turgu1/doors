@@ -1,0 +1,49 @@
+<html>
+<head>
+  <title> Gestion des portes </title>
+  <link rel="stylesheet" type="text/css" href="./style.css">
+  <meta charset="UTF-8">
+</head>
+<body>
+  <h1>Configuration: Porte 3</h1>
+  <hr/>
+  <form action="" method="get" class="form-style">
+    <div class="form-body">
+      <div class="form-style">
+        <label for="name">Nom: </label>
+        <input type="text" maxlength="31" name="name" id="name" title="Longueur maxi: 31"/>
+      </div>
+      <div class="form-style">
+        <label for="BOpen">GPIO Bouton Ouvrir: </label>
+        <input class="small" type="number" min="2" max="39" name="BOpen" id="BOpen" title="Valeurs possibles: 2, 4, 5, 13 à 39."/>
+      </div>
+      <div class="form-style">
+        <label for="BClose">GPIO Bouton Fermer: </label>
+        <input class="small" type="number" min="2" max="39" name="BClose" id="BClose" title="Valeurs possibles: 2, 4, 5, 13 à 39."/>
+      </div>
+      <div class="form-style">
+        <label for="ROpen">GPIO Relais Ouvrir: </label>
+        <input class="small" type="number" min="2" max="33" name="ROpen" id="ROpen" title="Valeurs possibles: 2, 4, 5, 12 à 33."/>
+      </div>
+      <div class="form-style">
+        <label for="RClose">GPIO Relais Fermer: </label>
+        <input class="small" type="number" min="2" max="33" name="RClose" id="RClose" title="Valeurs possibles: 2, 4, 5, 12 à 33."/>
+      </div>
+      <div class="form-style">
+        <label for="SOpen">Séquence Ouvrir: </label>
+        <input type="text" maxlength="80" name="SOpen" id="SOpen" title="Longueur maxi: 19 nombres"/>
+      </div>
+      <div class="form-style">
+        <label for="SClose">Séquence Fermer: </label>
+        <input type="text" maxlength="80" name="SClose" id="SClose" title="Longueur maxi: 19 nombres"/>
+      </div>
+    </div>
+    <div class="form-style">
+      <input type="submit" value="OK" class="submit button button2">
+    </div>
+  </form>
+
+  <hr/>
+  <button class="button button3" type="button" onclick="window.open('./portes.html', '_self'); return false;">Annuler</button>
+</body>
+</html>

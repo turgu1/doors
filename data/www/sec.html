@@ -1,0 +1,31 @@
+<html>
+<head>
+  <title> Gestion des portes </title>
+  <link rel="stylesheet" type="text/css" href="./style.css">
+  <meta charset="UTF-8">
+</head>
+<body>
+  <h1>Configuration: Sécurité</h1>
+  <hr/>
+  <form action="" method="get" class="form-style">
+    <div class="form-style">
+      <label for="oldpsw">Ancien mot de passe: </label>
+      <input type="password" maxlength="15" name="oldpsw" id="oldpsw" required title="Longueur maxi: 15">
+    </div>
+    <div class="form-style">
+      <label for="newpsw">Nouveau mot de passe: </label>
+      <input type="password" maxlength="15" name="newpsw" id="newpsw" required title="Longueur maxi: 15">
+    </div>
+    <div class="form-style">
+      <label for="checkpsw">Vérif. mot de passe: </label>
+      <input type="password" maxlength="15" name="checkpsw" id="checkpsw" required title="Longueur maxi: 15">
+    </div>
+    <div class="form-style">
+      <input type="submit" value="OK" class="submit button button2">
+    </div>
+  </form>
+
+  <hr/>
+  <button class="button button3" type="button" onclick="window.open('./config.html', '_self'); return false;">Annuler</button>
+</body>
+</html>

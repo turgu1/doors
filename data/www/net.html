@@ -1,0 +1,47 @@
+<html>
+<head>
+  <title> Gestion des portes </title>
+  <link rel="stylesheet" type="text/css" href="./style.css">
+  <meta charset="UTF-8">
+</head>
+<body>
+  <h1>Configuration: Réseau</h1>
+  <hr/>
+  <form action="" method="get" class="form-style">
+    <div class="form-style">
+      <label for="ssid">SSID: </label>
+      <input type="text" maxlength="21" name="ssid" id="ssid" required title="Longueur maxi: 21"/>
+    </div>
+    <div class="form-style">
+      <label for="psw">Mot de passe: </label>
+      <input type="password" maxlength="15" name="psw" id="psw" required title="Longueur maxi: 15"/>
+    </div>
+    <div class="form-style">
+      <label for="ipaddr_1">Adresse IP: </label>
+      <input type="number" min="0" max="254" class="small" name="ipaddr_1" id="ipaddr_1"/>
+      <input type="number" min="0" max="254" class="small" name="ipaddr_2" id="ipaddr_2"/>
+      <input type="number" min="0" max="254" class="small" name="ipaddr_3" id="ipaddr_3"/>
+      <input type="number" min="0" max="254" class="small" name="ipaddr_4" id="ipaddr_4"/>
+    </div>
+    <div class="form-style">
+      <label for="mask_1">Masque: </label>
+      <input type="number" min="0" max="255" class="small" name="mask_1" id="mask_1"/>
+      <input type="number" min="0" max="255" class="small" name="mask_2" id="mask_2"/>
+      <input type="number" min="0" max="255" class="small" name="mask_3" id="mask_3"/>
+      <input type="number" min="0" max="255" class="small" name="mask_4" id="mask_4"/>
+    </div>
+    <div class="form-style">
+      <label for="router_1">Routeur IP: </label>
+      <input type="number" min="0" max="255" class="small" name="router_1" id="router_1"/>
+      <input type="number" min="0" max="255" class="small" name="router_2" id="router_2"/>
+      <input type="number" min="0" max="255" class="small" name="router_3" id="router_3"/>
+      <input type="number" min="0" max="255" class="small" name="router_4" id="router_4"/>
+    </div>
+    <div class="form-style">
+      <input type="submit" value="OK" class="submit button button2"/>
+    </div>
+  </form>
+  <hr/>
+  <button class="button button3" type="button" onclick="window.open('./config.html', '_self'); return false;">Annuler</button>
+</body>
+</html>
