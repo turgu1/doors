@@ -1,6 +1,12 @@
 #ifndef _DOORS_H_
 #define _DOORS_H_
 
+#if DOORS
+  #define PUBLIC
+#else
+  #define PUBLIC extern
+#endif
+
 #include <stdbool.h>
 #include "esp_spi_flash.h"
 #include "sdkconfig.h"
@@ -17,6 +23,6 @@
 #define SSID_SIZE  (21 + 1)
 #define PSW_SIZE   (15 + 1)
 
-#define TAG "Doors"  // Used with logger
+PUBLIC char error_msg[256];
 
 #endif

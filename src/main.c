@@ -6,6 +6,8 @@
 #define GLOBAL 1
 #include "doors_global.h"
 
+#define TAG "MAIN"
+
 bool doors_initializations()
 {
   ESP_LOGI(TAG, "Initializations...");
