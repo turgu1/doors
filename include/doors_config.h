@@ -44,6 +44,7 @@ struct config_struct {
 
 PUBLIC struct config_struct doors_config;
 
+PUBLIC bool doors_validate_config();
 PUBLIC bool doors_get_config();
 PUBLIC bool doors_save_config();
 
