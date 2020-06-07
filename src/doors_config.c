@@ -95,10 +95,13 @@ static void doors_init_config()
   // Doors
 
   for (int i = 0; i < DOOR_COUNT; i++) {
+    doors_config.doors[i].enabled           = false;
     doors_config.doors[i].gpio_button_open  = 2;
     doors_config.doors[i].gpio_button_close = 2;
     doors_config.doors[i].gpio_relay_open   = 2;
     doors_config.doors[i].gpio_relay_close  = 2;
+    doors_config.doors[i].seq_open[0]       = 255;
+    doors_config.doors[i].seq_close[0]      = 255;
   }
   
   doors_save_config();
@@ -159,7 +162,7 @@ bool parse_seq(uint8_t * seq, char * str, int max_size)
     max_size--;
     seq++;
   }
-  *seq = 255;
+  if (max_size > 0) *seq = 255;
   if (*str != 0) ESP_LOGE(TAG, "Sequence not valid: [%s]", save);
   return *str == 0;
 }
