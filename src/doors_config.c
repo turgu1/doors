@@ -81,7 +81,7 @@ static void doors_init_config()
   memset(&doors_config, 0, sizeof(doors_config));
 
   doors_config.setup = true;
-  strcpy(doors_config.psw, "4188362354");
+  strcpy(doors_config.psw, ""); // No Temporary password
 
   // Network
 
