@@ -32,7 +32,9 @@ static bool check(uint8_t gpio, uint64_t * all, uint64_t gpios)
   return true;
 }
 
-#define VERIF(b, msg, p1, p2) if (!b) { sprintf(error_msg, msg, p1, p2); return false; }
+#define VERIF0(b, msg) if (!b) { sprintf(error_msg, msg); return false; }
+#define VERIF1(b, msg, p1) if (!b) { sprintf(error_msg, msg, p1); return false; }
+#define VERIF2(b, msg, p1, p2) if (!b) { sprintf(error_msg, msg, p1, p2); return false; }
 
 // Validate the configuration. Check for the following:
 //
@@ -50,25 +52,25 @@ bool doors_validate_config()
   int i;
   uint64_t all = GPIO_ALL;
 
-  VERIF(doors_config.version == DOORS_CONFIG_VERSION, "Numéro de version de configuration non valide: %d", doors_config.version, 0)
+  VERIF1((doors_config.version == DOORS_CONFIG_VERSION), "Numéro de version de configuration non valide: %d", doors_config.version)
 
   for (i = 0; i < DOOR_COUNT; i++) {
     if (doors_config.doors[i].enabled) {
-      VERIF(check(doors_config.doors[i].gpio_button_open,  &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Bouton Ouvrir.", doors_config.doors[i].gpio_button_open,  i + 1)
-      VERIF(check(doors_config.doors[i].gpio_button_close, &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Bouton Fermer.", doors_config.doors[i].gpio_button_close, i + 1)
-      VERIF(check(doors_config.doors[i].gpio_relay_open,   &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Relais Ouvrir.", doors_config.doors[i].gpio_relay_open,   i + 1)
-      VERIF(check(doors_config.doors[i].gpio_relay_close,  &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Relais Fermer.", doors_config.doors[i].gpio_relay_close,  i + 1)
-      VERIF(doors_config.doors[i].seq_open[0]  != 255, "Porte %d: Pas de séquence d'ouverture.", i + 1, 0)
-      VERIF(doors_config.doors[i].seq_close[0] != 255, "Porte %d: Pas de séquence de fermeture.", i + 1, 0)
-      VERIF(doors_config.doors[i].name[0] == 0, "Porte %d: Nom de la porte absent", i + 1, 0)
+      VERIF2(check(doors_config.doors[i].gpio_button_open,  &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Bouton Ouvrir.", doors_config.doors[i].gpio_button_open,  i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_button_close, &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Bouton Fermer.", doors_config.doors[i].gpio_button_close, i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_relay_open,   &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Relais Ouvrir.", doors_config.doors[i].gpio_relay_open,   i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_relay_close,  &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Relais Fermer.", doors_config.doors[i].gpio_relay_close,  i + 1)
+      VERIF1((doors_config.doors[i].seq_open[0]  != 255), "Porte %d: Pas de séquence d'ouverture.", i + 1)
+      VERIF1((doors_config.doors[i].seq_close[0] != 255), "Porte %d: Pas de séquence de fermeture.", i + 1)
+      VERIF1((doors_config.doors[i].name[0] == 0), "Porte %d: Nom de la porte absent.", i + 1)
     }
   }
 
-  VERIF(doors_config.network.ssid[0] == 0, "SSID Absent", 0, 0)
-  VERIF(doors_config.network.psw[0] == 0,  "Mot de passe WiFi absent", 0, 0)
+  VERIF0((doors_config.network.ssid[0] == 0), "SSID Absent.")
+  VERIF0((doors_config.network.psw[0] == 0),  "Mot de passe WiFi absent.")
 
-  VERIF(doors_config.psw[0] != 0, "Le mot de passe d'accès à la configuration est absent.", 0, 0)
-  
+  VERIF0((doors_config.psw[0] != 0), "Le mot de passe d'accès à la configuration est absent.")
+
   return true;
 }
 

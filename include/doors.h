@@ -25,4 +25,5 @@
 
 PUBLIC char error_msg[256];
 
+#undef PUBLIC
 #endif
