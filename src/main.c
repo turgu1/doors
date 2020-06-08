@@ -74,6 +74,7 @@ void app_main(void)
   printf("Free heap: %d\n", esp_get_free_heap_size());
 
   doors_initializations();
+  
   if (start_network()) {
     ESP_LOGI(TAG, "Network started.");
   }
