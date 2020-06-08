@@ -1,12 +1,7 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <ctype.h>
+#include "doors.h"
 
 #include "esp32/rom/crc.h"
 #include "cJSON.h"
-
-#include "doors.h"
 
 #define DOORS_CONFIG 1
 #include "doors_config.h"

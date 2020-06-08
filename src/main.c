@@ -2,6 +2,7 @@
 
 #include "doors.h"
 #include "doors_config.h"
+#include "doors_net.h"
 
 #define GLOBAL 1
 #include "doors_global.h"
@@ -46,7 +47,6 @@ bool doors_initializations()
     ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
   }
 
-
   doors_get_config();
 
   return true;
@@ -54,32 +54,40 @@ bool doors_initializations()
 
 void app_main(void)
 {
-    printf("App Main\n");
+  printf("App Main\n");
 
-    /* Print chip information */
-    esp_chip_info_t chip_info;
-    esp_chip_info(&chip_info);
-    printf("This is %s chip with %d CPU cores, WiFi%s%s, ",
-            CONFIG_IDF_TARGET,
-            chip_info.cores,
-            (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
-            (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
+  // Print chip information
 
-    printf("silicon revision %d, ", chip_info.revision);
+  esp_chip_info_t chip_info;
+  esp_chip_info(&chip_info);
+  printf("This is %s chip with %d CPU cores, WiFi%s%s, ",
+         CONFIG_IDF_TARGET,
+         chip_info.cores,
+         (chip_info.features & CHIP_FEATURE_BT ) ? "/BT"  : "",
+         (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
 
-    printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
-            (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+  printf("silicon revision %d, ", chip_info.revision);
 
-    printf("Free heap: %d\n", esp_get_free_heap_size());
+  printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
+         (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-    doors_initializations();
+  printf("Free heap: %d\n", esp_get_free_heap_size());
 
-    for (int i = 10; i >= 0; i--) {
-        printf("Restarting in %d seconds...\n", i);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-    printf("Restarting now.\n");
-    fflush(stdout);
+  doors_initializations();
+  if (start_network()) {
+    ESP_LOGI(TAG, "Network started.");
+  }
+  else {
+    ESP_LOGE(TAG, "Unable to start network. Software issue...");
+  }
 
-    esp_restart();
+  for (int i = 100; i >= 0; i--) {
+    printf("Restarting in %d seconds...\n", i);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+
+  printf("Restarting now.\n");
+  fflush(stdout);
+
+  esp_restart();
 }
