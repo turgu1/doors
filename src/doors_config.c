@@ -6,10 +6,7 @@
 #define DOORS_CONFIG 1
 #include "doors_config.h"
 
-#define TAG "DOORS_CONFIG"
-
-static const uint8_t default_ip[4]   = { 192, 168,   1, 1 };
-static const uint8_t default_mask[4] = { 255, 255, 255, 0 };
+static const char * TAG = "DOORS_CONFIG";
 
 static const uint64_t GPIO_BUTTONS  = 0x0000009FFEEFE034LL; // 2, 4, 5, 13 .. 19, 21 .. 23, 25 .. 36, 39
 static const uint64_t GPIO_RELAYS   = 0x00000003FEEFF034LL; // 2, 4, 5, 12 .. 19, 21 .. 23, 25 .. 33
@@ -71,7 +68,7 @@ bool doors_validate_config()
 
 static void doors_init_config()
 {
-  ESP_LOGW(TAG, "Config file initialized.");
+  ESP_LOGW(TAG, "Config file initialized from default values.");
 
   memset(&doors_config, 0, sizeof(doors_config));
 
@@ -83,9 +80,9 @@ static void doors_init_config()
   strcpy(doors_config.network.ssid, "DOORS");
   strcpy(doors_config.network.psw,  "DOORS");
 
-  memcpy(doors_config.network.ip,     default_ip,   4);
-  memcpy(doors_config.network.mask,   default_mask, 4);
-  memcpy(doors_config.network.router, default_ip,   4);
+  strcpy(doors_config.network.ip,     DEFAULT_IP);
+  strcpy(doors_config.network.mask,   DEFAULT_MASK);
+  strcpy(doors_config.network.gw,     DEFAULT_GW);
 
   // Doors
 
@@ -162,21 +159,20 @@ bool parse_seq(uint8_t * seq, char * str, int max_size)
   return *str == 0;
 }
 
-bool doors_get_config()
+static bool doors_get_config_from_file(char * filename)
 {
   int i;
   char * tmp = malloc(121);
 
-  ESP_LOGI(TAG, "Reading JSON config file");
-
-  FILE *f = fopen("/spiffs/config.json", "r");
+  FILE *f = fopen(filename, "r");
 
   if (f == NULL) {
-    ESP_LOGW(TAG, "Config file not found. Creating...");
-    doors_init_config();
+    ESP_LOGW(TAG, "Config file %s not found.", filename);
     return false;
   }
   else {
+    ESP_LOGI(TAG, "Reading JSON config file %s.", filename);
+
     fseek(f, 0L, SEEK_END);
     int buff_size = ftell(f);
     rewind(f);
@@ -189,17 +185,18 @@ bool doors_get_config()
 
     cJSON * root = cJSON_Parse(buff);
     cJSON * item;
-    cJSON * net, * doors, * ip, * door;
+    cJSON * net, * doors, * door;
 
     bool completed = false;
 
     GET_VAL(root, doors_config.version, "version");
 
     if (doors_config.version != DOORS_CONFIG_VERSION) {
-      ESP_LOGE(TAG, "Wrong config version: %d.", doors_config.version);
-      doors_init_config();
+      ESP_LOGE(TAG, "File %s:rong config version: %d.", filename, doors_config.version);
       return false;
     }
+
+    GET_VAL(root, doors_config.crc32, "crc32");
 
     GET_STR(root,  doors_config.psw,   "psw", PSW_SIZE - 1);
     GET_BOOL(root, doors_config.setup, "setup");
@@ -207,15 +204,10 @@ bool doors_get_config()
     
     GET_OBJECT(root, net, "network");
     GET_STR(net, doors_config.network.ssid, "ssid", SSID_SIZE - 1);
-    GET_STR(net, doors_config.network.psw, "psw", PSW_SIZE - 1);
-    GET_ARRAY(net, ip, "ip", 4);
-    for (i = 0; i < 4; i++) { GET_VAL_ITEM(ip, doors_config.network.ip[i], "ip", i); }
-
-    GET_ARRAY(net, ip, "mask", 4);
-    for (i = 0; i < 4; i++) { GET_VAL_ITEM(ip, doors_config.network.mask[i], "mask", i); }
-
-    GET_ARRAY(net, ip, "router", 4);
-    for (i = 0; i < 4; i++) { GET_VAL_ITEM(ip, doors_config.network.router[i], "router", i); }
+    GET_STR(net, doors_config.network.psw,  "psw",  PSW_SIZE  - 1);
+    GET_STR(net, doors_config.network.ip,   "ip",   IP_SIZE   - 1);
+    GET_STR(net, doors_config.network.mask, "mask", IP_SIZE   - 1);
+    GET_STR(net, doors_config.network.gw,   "gw",   IP_SIZE   - 1);
 
     GET_ARRAY(root, doors, "doors", DOOR_COUNT);
     for (i = 0; i < DOOR_COUNT; i++) {
@@ -232,8 +224,6 @@ bool doors_get_config()
       if (!parse_seq(doors_config.doors[i].seq_close, tmp, SEQ_SIZE)) goto fin;
     }
 
-    GET_VAL(root, doors_config.crc32, "crc32");
-
     completed = true;
 fin:
     cJSON_Delete(root);
@@ -241,10 +231,7 @@ fin:
     free(tmp);
 
     uint32_t crc32 = crc32_le(0, (uint8_t const *) &doors_config, sizeof(doors_config) - 4);
-    if (!completed || (doors_config.crc32 != crc32)) {
-      doors_init_config();
-      return false;
-    }  
+    if (!completed || (doors_config.crc32 != crc32)) return false;
   }
 
   return true;
@@ -278,7 +265,7 @@ void seq_to_str(uint8_t * seq, char * str, int max_size)
   *str = 0;
 }
 
-bool doors_save_config()
+static bool doors_save_config_to_file(char * filename)
 {
   int i;
   char * tmp = (char *) malloc(121);
@@ -287,7 +274,7 @@ bool doors_save_config()
   doors_config.crc32 = crc32;
 
   cJSON * root = cJSON_CreateObject();
-  cJSON * net, * doors, * door, * ip, * mask, * router;
+  cJSON * net, * doors, * door;
   
   cJSON_AddNumberToObject(root, "version", doors_config.version);
   cJSON_AddStringToObject(root, "psw",     doors_config.psw);
@@ -297,15 +284,9 @@ bool doors_save_config()
   cJSON_AddItemToObject  (root, "network", net = cJSON_CreateObject());
   cJSON_AddStringToObject(net,  "ssid",    doors_config.network.ssid);
   cJSON_AddStringToObject(net,  "psw",     doors_config.network.psw);
-
-  cJSON_AddItemToObject  (net,  "ip",      ip = cJSON_CreateArray());
-  for (i = 0; i < 4; i++) cJSON_AddItemToArray(ip, cJSON_CreateNumber(doors_config.network.ip[i]));
-
-  cJSON_AddItemToObject  (net,  "mask",    mask = cJSON_CreateArray());
-  for (i = 0; i < 4; i++) cJSON_AddItemToArray(mask, cJSON_CreateNumber(doors_config.network.mask[i]));
-
-  cJSON_AddItemToObject  (net,  "router",  router = cJSON_CreateArray());
-  for (i = 0; i < 4; i++) cJSON_AddItemToArray(router, cJSON_CreateNumber(doors_config.network.router[i]));
+  cJSON_AddStringToObject(net,  "ip",      doors_config.network.ip);
+  cJSON_AddStringToObject(net,  "mask",    doors_config.network.mask);
+  cJSON_AddStringToObject(net,  "gw",      doors_config.network.gw);
 
   cJSON_AddItemToObject(root, "doors", doors = cJSON_CreateArray());
 
@@ -329,11 +310,11 @@ bool doors_save_config()
 
   cJSON_AddNumberToObject(root, "crc32", doors_config.crc32);
 
-  FILE *f = fopen("/spiffs/config.json", "w");
+  FILE *f = fopen(filename, "w");
   bool completed = false;
 
   if (f == NULL) {
-    ESP_LOGE(TAG, "Not able to create config file.");
+    ESP_LOGE(TAG, "Not able to create config file %s.", filename);
   }
   else {
 
@@ -342,18 +323,47 @@ bool doors_save_config()
 
     completed = fwrite(str, 1, size, f) == size;
 
-    if (!completed) {
-      ESP_LOGE(TAG, "Unable to write config into file.");
-    }
-
     free(tmp);
     free(str);
     cJSON_Delete(root);
 
     fclose(f);
 
-    if (completed) ESP_LOGI(TAG, "Config file saved.");
+    if (completed) {
+      ESP_LOGI(TAG, "Config file %s saved.", filename);
+    }
+    else {
+      ESP_LOGE(TAG, "Unable to write config into file %s.", filename);
+    }
   }
 
   return completed;
+}
+
+bool doors_get_config()
+{
+  if (doors_get_config_from_file("/spiffs/config.json")) {
+    return true;
+  }
+  else if (doors_get_config_from_file("/spiffs/config_back_1.json")) {
+    doors_save_config_to_file("/spiffs/config.json");
+    return true;
+  }
+  else if (doors_get_config_from_file("/spiffs/config_back_2.json")) {
+    doors_save_config_to_file("/spiffs/config.json");
+    doors_save_config_to_file("/spiffs/config_back_1.json");
+    return true;
+  }
+  else {
+    doors_init_config();
+    return doors_save_config();
+  }
+}
+
+bool doors_save_config()
+{
+  if (!doors_save_config_to_file("/spiffs/config.json")) return false;
+  if (!doors_save_config_to_file("/spiffs/config_back_1.json")) return false;
+  if (!doors_save_config_to_file("/spiffs/config_back_2.json")) return false;
+  return true;
 }

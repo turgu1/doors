@@ -25,11 +25,11 @@ struct door_struct {
 };
 
 struct network_struct {
-  char    ssid[SSID_SIZE];
-  char    psw[PSW_SIZE];
-  uint8_t ip[4];
-  uint8_t mask[4];
-  uint8_t router[4];
+  char ssid[SSID_SIZE];
+  char psw[PSW_SIZE];
+  char ip[16];
+  char mask[16];
+  char gw[16];
 };
 
 struct config_struct {

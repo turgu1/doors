@@ -7,7 +7,7 @@
 #define GLOBAL 1
 #include "doors_global.h"
 
-#define TAG "MAIN"
+static const char * TAG = "MAIN";
 
 bool doors_initializations()
 {

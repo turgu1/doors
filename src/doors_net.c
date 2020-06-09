@@ -1,19 +1,37 @@
 #include "doors.h"
 #include "esp_wifi.h"
-#include "esp_event.h"
+#include "tcpip_adapter.h"
+
+#include <lwip/sockets.h>
+#include <lwip/sys.h>
+#include <lwip/api.h>
+#include <lwip/netdb.h>
 
 #include "doors_config.h"
 
 #define  DOORS_NET 1
 #include "doors_net.h"
 
-#define TAG "DOORS_NET"
+static const char *  TAG = "DOORS_NET";
+
+// The event group allows multiple bits for each event, but we 
+// only care about two events:
+// - we are connected to the AP with an IP
+// - we failed to connect after the maximum amount of retries
+
+#define WIFI_CONNECTED_BIT BIT0
+#define WIFI_FAIL_BIT      BIT1
+
+// FreeRTOS event group to signal when we are connected
+
+static EventGroupHandle_t wifi_event_group;
+static bool wifi_first_start = true;
 
 // ----- AP MODE -------------------------------------------------------------------
 
 #define MAX_STA_CONN       3
-#define AP_SSID  "DOORS"
-#define AP_PSW   "DOORS"
+#define AP_SSID  "portes"
+#define AP_PSW   "portes"
 
 static void ap_event_handler(void            * arg, 
                              esp_event_base_t  event_base,
@@ -35,6 +53,22 @@ static void ap_event_handler(void            * arg,
 static bool wifi_init_ap()
 {
   tcpip_adapter_init();
+
+	//For using of static IP
+	tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_AP); // Don't run a DHCP client
+
+	//Set static IP
+	tcpip_adapter_ip_info_t ipInfo;
+	inet_pton(AF_INET, DEFAULT_IP,   &ipInfo.ip);
+	inet_pton(AF_INET, DEFAULT_GW,   &ipInfo.gw);
+	inet_pton(AF_INET, DEFAULT_MASK, &ipInfo.netmask);
+	tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo);
+
+	//Set Main DNS server
+	//tcpip_adapter_dns_info_t dnsInfo;
+	//inet_pton(AF_INET, DNS_SERVER, &dnsInfo.ip);
+	//tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_AP, TCPIP_ADAPTER_DNS_MAIN, &dnsInfo);
+
   ESP_ERROR_CHECK(esp_event_loop_create_default());
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -70,18 +104,6 @@ static bool wifi_init_ap()
 
 #define ESP_MAXIMUM_RETRY  5
 
-// FreeRTOS event group to signal when we are connected
-
-static EventGroupHandle_t wifi_event_group;
-
-// The event group allows multiple bits for each event, but we 
-// only care about two events:
-// - we are connected to the AP with an IP
-// - we failed to connect after the maximum amount of retries
-
-#define WIFI_CONNECTED_BIT BIT0
-#define WIFI_FAIL_BIT      BIT1
-
 static int s_retry_num = 0;
 
 static void sta_event_handler(void            * arg, 
@@ -93,21 +115,29 @@ static void sta_event_handler(void            * arg,
     esp_wifi_connect();
   } 
   else if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_STA_DISCONNECTED)) {
-    if (s_retry_num < ESP_MAXIMUM_RETRY) {
-      esp_wifi_connect();
-      s_retry_num++;
-      ESP_LOGI(TAG, "retry to connect to the AP");
-    } 
-    else {
-      xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
+    if (wifi_first_start) {
+      if (s_retry_num < ESP_MAXIMUM_RETRY) {
+        esp_wifi_connect();
+        s_retry_num++;
+        ESP_LOGI(TAG, "retry to connect to the AP");
+      } 
+      else {
+        xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
+        ESP_LOGI(TAG,"connect to the AP fail");
+      }
     }
-    ESP_LOGI(TAG,"connect to the AP fail");
+    else{
+      ESP_LOGI(TAG, "Wifi Disconnected.");
+      esp_wifi_connect();
+    }
+
   } 
   else if ((event_base == IP_EVENT) && (event_id == IP_EVENT_STA_GOT_IP)) {
     ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
     ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
     s_retry_num = 0;
     xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
+    wifi_first_start = false;
   }
 }
 
@@ -118,6 +148,19 @@ static bool wifi_init_sta(void)
   wifi_event_group = xEventGroupCreate();
 
   tcpip_adapter_init();
+
+  if (doors_config.network.ip[0] != '\0') {
+    tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA); // Don't run a DHCP client
+
+    //Set static IP
+    tcpip_adapter_ip_info_t ipInfo;
+    
+    inet_pton(AF_INET, doors_config.network.ip,   &ipInfo.ip);
+    inet_pton(AF_INET, doors_config.network.gw,   &ipInfo.gw);
+    inet_pton(AF_INET, doors_config.network.mask, &ipInfo.netmask);
+
+    tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &ipInfo);
+  }
 
   ESP_ERROR_CHECK(esp_event_loop_create_default());
 
