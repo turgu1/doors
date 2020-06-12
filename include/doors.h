@@ -22,11 +22,15 @@
 #include "esp_system.h"
 #include "esp_err.h"
 #include "esp_spiffs.h"
+#include "nvs_flash.h"
 
 #define  LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include "esp_log.h"
 
 #define DOOR_COUNT 5
+
+// All the following sizes must be a multiple of 4
+
 #define SEQ_SIZE   (19 + 1) // -1 = end of list
 #define NAME_SIZE  (31 + 1)
 #define SSID_SIZE  (21 + 1)

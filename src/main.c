@@ -3,6 +3,7 @@
 #include "doors.h"
 #include "doors_config.h"
 #include "doors_net.h"
+#include "doors_www.h"
 
 #define GLOBAL 1
 #include "doors_global.h"
@@ -47,6 +48,8 @@ bool doors_initializations()
     ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
   }
 
+	ESP_ERROR_CHECK(nvs_flash_init());
+
   doors_get_config();
 
   return true;
@@ -81,14 +84,18 @@ void app_main(void)
   else {
     ESP_LOGE(TAG, "Unable to start network. Software issue...");
   }
+ 
+  start_http_server();
 
-  for (int i = 100; i >= 0; i--) {
-    printf("Restarting in %d seconds...\n", i);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
+  // printf("Restarting in 500 seconds ");
+  // for (int i = 500; i >= 0; i--) {
+  //   printf(".");
+  //   fflush(stdout);
+  //   vTaskDelay(1000 / portTICK_PERIOD_MS);
+  // }
 
-  printf("Restarting now.\n");
-  fflush(stdout);
+  // printf("\nRestarting now.\n");
+  // fflush(stdout);
 
-  esp_restart();
+  // esp_restart();
 }

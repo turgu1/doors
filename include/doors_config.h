@@ -15,6 +15,7 @@
 
 struct door_struct {
   bool    enabled;
+  uint8_t padding[3];
   char    name[NAME_SIZE];
   uint8_t gpio_button_open;
   uint8_t gpio_button_close;
@@ -26,20 +27,20 @@ struct door_struct {
 
 struct network_struct {
   char ssid[SSID_SIZE];
-  char psw[PSW_SIZE];
-  char ip[16];
-  char mask[16];
-  char gw[16];
+  char  psw[PSW_SIZE];
+  char   ip[IP_SIZE];
+  char mask[IP_SIZE];
+  char   gw[IP_SIZE];
 };
 
 struct config_struct {
-  uint8_t version;
-  struct door_struct doors[DOOR_COUNT];
+  uint8_t               version;
+  bool                  setup;
+  uint8_t               padding[2];
+  struct door_struct    doors[DOOR_COUNT];
   struct network_struct network;
-  char     psw[PSW_SIZE];
-  bool     setup;
-  bool     valid;
-  uint32_t crc32;
+  char                  psw[PSW_SIZE];
+  uint32_t              crc32;
 };
 
 PUBLIC struct config_struct doors_config;

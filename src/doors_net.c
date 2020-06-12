@@ -1,4 +1,5 @@
 #include "doors.h"
+
 #include "esp_wifi.h"
 #include "tcpip_adapter.h"
 
@@ -11,6 +12,8 @@
 
 #define  DOORS_NET 1
 #include "doors_net.h"
+
+#include "secure.h"
 
 static const char *  TAG = "DOORS_NET";
 
@@ -31,7 +34,6 @@ static bool wifi_first_start = true;
 
 #define MAX_STA_CONN       3
 #define AP_SSID  "portes"
-#define AP_PSW   "portes"
 
 static void ap_event_handler(void            * arg, 
                              esp_event_base_t  event_base,
@@ -55,19 +57,22 @@ static bool wifi_init_ap()
   tcpip_adapter_init();
 
 	//For using of static IP
-	tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_AP); // Don't run a DHCP client
+	tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP); // Don't run a DHCP client
 
 	//Set static IP
 	tcpip_adapter_ip_info_t ipInfo;
+
 	inet_pton(AF_INET, DEFAULT_IP,   &ipInfo.ip);
 	inet_pton(AF_INET, DEFAULT_GW,   &ipInfo.gw);
 	inet_pton(AF_INET, DEFAULT_MASK, &ipInfo.netmask);
+
 	tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo);
 
-	//Set Main DNS server
-	//tcpip_adapter_dns_info_t dnsInfo;
-	//inet_pton(AF_INET, DNS_SERVER, &dnsInfo.ip);
-	//tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_AP, TCPIP_ADAPTER_DNS_MAIN, &dnsInfo);
+  ESP_LOGI(TAG, "IP Address..........: "IPSTR, IP2STR(&ipInfo.ip));
+  ESP_LOGI(TAG, "Subnet Mask.........: "IPSTR, IP2STR(&ipInfo.netmask));
+  ESP_LOGI(TAG, "Default Gateway.....: "IPSTR, IP2STR(&ipInfo.gw));
+
+	tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
 
   ESP_ERROR_CHECK(esp_event_loop_create_default());
 
@@ -94,7 +99,7 @@ static bool wifi_init_ap()
   ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 
-  ESP_LOGI(TAG, "wifi_init_softap finished. SSID:%s password:%s",
+  ESP_LOGI(TAG, "wifi_init_ap finished. SSID:%s password:%s",
           AP_SSID, AP_PSW);
 
   return true;
@@ -102,7 +107,7 @@ static bool wifi_init_ap()
 
 // ----- STA MODE ------------------------------------------------------------------
 
-#define ESP_MAXIMUM_RETRY  5
+#define ESP_MAXIMUM_RETRY  3
 
 static int s_retry_num = 0;
 
@@ -117,17 +122,20 @@ static void sta_event_handler(void            * arg,
   else if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_STA_DISCONNECTED)) {
     if (wifi_first_start) {
       if (s_retry_num < ESP_MAXIMUM_RETRY) {
+        vTaskDelay(10000 / portTICK_PERIOD_MS); // wait 10 sec
+        ESP_LOGI(TAG, "retry to connect to the AP");
         esp_wifi_connect();
         s_retry_num++;
-        ESP_LOGI(TAG, "retry to connect to the AP");
       } 
       else {
         xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
         ESP_LOGI(TAG,"connect to the AP fail");
       }
     }
-    else{
+    else {
       ESP_LOGI(TAG, "Wifi Disconnected.");
+      vTaskDelay(10000 / portTICK_PERIOD_MS); // wait 10 sec
+      ESP_LOGI(TAG, "retry to connect to the AP");
       esp_wifi_connect();
     }
 
@@ -145,8 +153,6 @@ static bool wifi_init_sta(void)
 {
   bool connected = false;
 
-  wifi_event_group = xEventGroupCreate();
-
   tcpip_adapter_init();
 
   if (doors_config.network.ip[0] != '\0') {
@@ -160,8 +166,14 @@ static bool wifi_init_sta(void)
     inet_pton(AF_INET, doors_config.network.mask, &ipInfo.netmask);
 
     tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &ipInfo);
+
+    ESP_LOGI(TAG, "TCP/IP static configuration:");
+    ESP_LOGI(TAG, "IP Address..........: "IPSTR, IP2STR(&ipInfo.ip));
+    ESP_LOGI(TAG, "Subnet Mask.........: "IPSTR, IP2STR(&ipInfo.netmask));
+    ESP_LOGI(TAG, "Default Gateway.....: "IPSTR, IP2STR(&ipInfo.gw));
   }
 
+  wifi_event_group = xEventGroupCreate();
   ESP_ERROR_CHECK(esp_event_loop_create_default());
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -219,12 +231,18 @@ static bool wifi_init_sta(void)
 
   vEventGroupDelete(wifi_event_group);
 
+  if (!connected) {
+    ESP_ERROR_CHECK(esp_event_loop_delete_default());
+  }
   return connected;
 }
 
 bool start_network()
 {
-  if (!wifi_init_sta()) return wifi_init_ap();
+  if (!wifi_init_sta()) {
+    vTaskDelay(10000 / portTICK_PERIOD_MS); // Wait 10 seconds
+    return wifi_init_ap();
+  }
   return true;
 }
 
