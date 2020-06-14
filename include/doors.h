@@ -31,11 +31,12 @@
 
 // All the following sizes must be a multiple of 4
 
-#define SEQ_SIZE   (19 + 1) // -1 = end of list
-#define NAME_SIZE  (31 + 1)
-#define SSID_SIZE  (21 + 1)
-#define PSW_SIZE   (15 + 1)
-#define IP_SIZE    (15 + 1)
+#define SEQ_SIZE     (19 + 1) // -1 = end of list
+#define NAME_SIZE    (31 + 1)
+#define SSID_SIZE    (21 + 1)
+#define PWD_SIZE     (15 + 1)
+#define IP_SIZE      (15 + 1)
+#define MESSAGE_SIZE (59 + 1)
 
 #define DEFAULT_IP   "192.168.1.1"
 #define DEFAULT_GW   "192.168.1.1"

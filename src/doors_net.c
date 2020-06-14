@@ -192,7 +192,7 @@ static bool wifi_init_sta(void)
   };
 
   strcpy((char *) wifi_config.sta.ssid,     doors_config.network.ssid);
-  strcpy((char *) wifi_config.sta.password, doors_config.network.psw);
+  strcpy((char *) wifi_config.sta.password, doors_config.network.pwd);
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
@@ -215,12 +215,12 @@ static bool wifi_init_sta(void)
 
   if (bits & WIFI_CONNECTED_BIT) {
     ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
-             doors_config.network.ssid, doors_config.network.psw);
+             doors_config.network.ssid, doors_config.network.pwd);
     connected = true;
   } 
   else if (bits & WIFI_FAIL_BIT) {
     ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
-             doors_config.network.ssid, doors_config.network.psw);
+             doors_config.network.ssid, doors_config.network.pwd);
   }
   else {
     ESP_LOGE(TAG, "UNEXPECTED EVENT");

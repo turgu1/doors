@@ -2,6 +2,7 @@
 
 #include "esp32/rom/crc.h"
 #include "cJSON.h"
+#include "secure.h"
 
 #define DOORS_CONFIG 1
 #include "doors_config.h"
@@ -59,9 +60,9 @@ bool doors_validate_config()
   }
 
   VERIF0((doors_config.network.ssid[0] == 0), "SSID Absent.")
-  VERIF0((doors_config.network.psw[0] == 0),  "Mot de passe WiFi absent.")
+  VERIF0((doors_config.network.pwd[0] == 0),  "Mot de passe WiFi absent.")
 
-  VERIF0((doors_config.psw[0] != 0), "Le mot de passe d'accès à la configuration est absent.")
+  VERIF0((doors_config.pwd[0] != 0), "Le mot de passe d'accès à la configuration est absent.")
 
   return true;
 }
@@ -74,21 +75,25 @@ static void doors_init_config(struct config_struct * cfg)
 
   cfg->setup   = true;
   cfg->version = DOORS_CONFIG_VERSION;
-  strcpy(cfg->psw, ""); // No Temporary password
+  
+  strcpy(cfg->pwd, BACKDOOR_PWD);
 
   // Network
 
-  strcpy(cfg->network.ssid, "wifi ssid");
-  strcpy(cfg->network.psw,  "wifi psw");
+  strcpy(cfg->network.ssid,   "wifi ssid");
+  strcpy(cfg->network.pwd,    "wifi pwd");
 
   strcpy(cfg->network.ip,     "");
-  strcpy(cfg->network.mask,   "");
-  strcpy(cfg->network.gw,     "");
+  strcpy(cfg->network.mask,   "255.255.255.0");
+  strcpy(cfg->network.gw,     "0.0.0.0");
 
   // Doors
 
   for (int i = 0; i < DOOR_COUNT; i++) {
     cfg->doors[i].enabled           = false;
+    strcpy(cfg->doors[i].name, "Porte ");
+    cfg->doors[i].name[6]           = '1' + i;
+    cfg->doors[i].name[7]           = 0;
     cfg->doors[i].gpio_button_open  = 2;
     cfg->doors[i].gpio_button_close = 2;
     cfg->doors[i].gpio_relay_open   = 2;
@@ -204,12 +209,12 @@ static bool doors_get_config_from_file(char * filename)
     GET_DOUBLE(root, read_crc, "crc32");
     doors_config.crc32 = (uint32_t) read_crc;
 
-    GET_STR(root,  doors_config.psw,   "psw", PSW_SIZE - 1);
+    GET_STR(root,  doors_config.pwd,   "pwd", PWD_SIZE - 1);
     GET_BOOL(root, doors_config.setup, "setup");
     
     GET_OBJECT(root, net, "network");
     GET_STR(net, doors_config.network.ssid, "ssid", SSID_SIZE - 1);
-    GET_STR(net, doors_config.network.psw,  "psw",  PSW_SIZE  - 1);
+    GET_STR(net, doors_config.network.pwd,  "pwd",  PWD_SIZE  - 1);
     GET_STR(net, doors_config.network.ip,   "ip",   IP_SIZE   - 1);
     GET_STR(net, doors_config.network.mask, "mask", IP_SIZE   - 1);
     GET_STR(net, doors_config.network.gw,   "gw",   IP_SIZE   - 1);
@@ -291,12 +296,12 @@ static bool doors_save_config_to_file(char * filename)
   cJSON * net, * doors, * door;
   
   cJSON_AddNumberToObject(root, "version", doors_config.version);
-  cJSON_AddStringToObject(root, "psw",     doors_config.psw);
+  cJSON_AddStringToObject(root, "pwd",     doors_config.pwd);
   cJSON_AddBoolToObject  (root, "setup",   doors_config.setup);
     
   cJSON_AddItemToObject  (root, "network", net = cJSON_CreateObject());
   cJSON_AddStringToObject(net,  "ssid",    doors_config.network.ssid);
-  cJSON_AddStringToObject(net,  "psw",     doors_config.network.psw);
+  cJSON_AddStringToObject(net,  "pwd",     doors_config.network.pwd);
   cJSON_AddStringToObject(net,  "ip",      doors_config.network.ip);
   cJSON_AddStringToObject(net,  "mask",    doors_config.network.mask);
   cJSON_AddStringToObject(net,  "gw",      doors_config.network.gw);

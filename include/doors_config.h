@@ -27,7 +27,7 @@ struct door_struct {
 
 struct network_struct {
   char ssid[SSID_SIZE];
-  char  psw[PSW_SIZE];
+  char  pwd[PWD_SIZE];
   char   ip[IP_SIZE];
   char mask[IP_SIZE];
   char   gw[IP_SIZE];
@@ -39,12 +39,13 @@ struct config_struct {
   uint8_t               padding[2];
   struct door_struct    doors[DOOR_COUNT];
   struct network_struct network;
-  char                  psw[PSW_SIZE];
+  char                  pwd[PWD_SIZE];
   uint32_t              crc32;
 };
 
 PUBLIC struct config_struct doors_config;
-
+PUBLIC void seq_to_str(uint8_t * seq, char * str, int max_size);
+PUBLIC bool parse_seq(uint8_t * seq, char * str, int max_size);
 PUBLIC bool doors_validate_config();
 PUBLIC bool doors_get_config();
 PUBLIC bool doors_save_config();

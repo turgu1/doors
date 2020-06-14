@@ -1,0 +1,76 @@
+<html>
+<head>
+  <title> Gestion des portes </title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" type="text/css" href="./style.css">
+  <!-- generics -->
+  <link rel="icon" href="./favicon-32.png" sizes="32x32">
+  <link rel="icon" href="./favicon-57.png" sizes="57x57">
+  <link rel="icon" href="./favicon-76.png" sizes="76x76">
+  <link rel="icon" href="./favicon-96.png" sizes="96x96">
+  <link rel="icon" href="./favicon-128.png" sizes="128x128">
+  <link rel="icon" href="./favicon-192.png" sizes="192x192">
+  <link rel="icon" href="./favicon-228.png" sizes="228x228">
+
+  <!-- Android -->
+  <link rel="shortcut icon" sizes="196x196" href=“./favicon-196.png">
+
+  <!-- iOS -->
+  <link rel="apple-touch-icon" href="./favicon-120.png" sizes="120x120">
+  <link rel="apple-touch-icon" href="./favicon-152.png" sizes="152x152">
+  <link rel="apple-touch-icon" href="./favicon-180.png" sizes="180x180">
+
+  <!-- Windows 8 IE 10-->
+  <meta name="msapplication-TileColor" content="#FFFFFF">
+  <meta name="msapplication-TileImage" content="./favicon-144.png">
+
+  <!— Windows 8.1 + IE11 and above —>
+  <meta name="msapplication-config" content="./browserconfig.xml" />
+</head>
+<body>
+  <h1>Configuration: Porte #{DOOR_NBR}</h1>
+  <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
+  <hr/>
+  <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
+  <form action="./door_update" method="post" class="form-style">
+    <div class="form-body">
+      <input type="number" hidden="1" name="DOOR_NBR" id="DOOR_NBR" value="#{DOOR_NBR}"/>
+      <div class="form-style">
+        <label for="name">Nom: </label>
+        <input type="text" maxlength="31" name="NAME" id="NAME" title="Longueur maxi: 31" value="#{NAME}"/>
+      </div>
+      <div class="form-style">
+        <label for="BOpen">GPIO Bouton Ouvrir: </label>
+        <input class="small" type="number" min="2" max="39" name="BOPEN" id="BOPEN" title="Valeurs possibles: 2, 4, 5, 13 à 39." value="#{BOPEN}"/>
+      </div>
+      <div class="form-style">
+        <label for="BClose">GPIO Bouton Fermer: </label>
+        <input class="small" type="number" min="2" max="39" name="BCLOSE" id="BCLOSE" title="Valeurs possibles: 2, 4, 5, 13 à 39." value="#{BCLOSE}"/>
+      </div>
+      <div class="form-style">
+        <label for="ROpen">GPIO Relais Ouvrir: </label>
+        <input class="small" type="number" min="2" max="33" name="ROPEN"  id="ROPEN" title="Valeurs possibles: 2, 4, 5, 12 à 33." value="#{ROPEN}"/>
+      </div>
+      <div class="form-style">
+        <label for="RClose">GPIO Relais Fermer: </label>
+        <input class="small" type="number" min="2" max="33" name="RCLOSE" id="RCLOSE" title="Valeurs possibles: 2, 4, 5, 12 à 33." value="#{RCLOSE}"/>
+      </div>
+      <div class="form-style">
+        <label for="SOpen">Séquence Ouvrir: </label>
+        <input type="text" maxlength="80" name="SOPEN" id="SOPEN" title="Longueur maxi: 19 nombres, valeurs >= 0 et <= 254" value="#{SOPEN}"/>
+      </div>
+      <div class="form-style">
+        <label for="SClose">Séquence Fermer: </label>
+        <input type="text" maxlength="80" name="SCLOSE" id="SCLOSE" title="Longueur maxi: 19 nombres, valeurs >= 0 et <= 254" value="#{SCLOSE}"/>
+      </div>
+    </div>
+    <div class="form-style">
+      <input type="submit" value="OK" class="submit button button2">
+    </div>
+  </form>
+
+  <hr/>
+  <a class="button button3" type="button button3" href="./doorscfg">Annuler</a>
+</body>
+</html>

@@ -110,7 +110,7 @@ static void free_packets()
   }
 }
 
-packet_struct * prepare_html(char * filename, field_struct * fields)
+packet_struct * prepare_html(char * filename, field_struct * fields, int * size)
 {
   ESP_LOGI(TAG, "Preparing page %s.", filename);
 
@@ -193,6 +193,14 @@ packet_struct * prepare_html(char * filename, field_struct * fields)
       put_char(ch);
     }
   }
+
+  pkts = packets;
+  int siz = 0;
+  while (pkts->size > 0) {
+    siz += pkts->size;
+    pkts++;
+  }
+  *size = siz;
 
   pkts = packets;
 

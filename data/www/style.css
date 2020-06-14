@@ -1,4 +1,8 @@
 .button {
+  -webkit-appearance: none;
+  -moz-appearance: button;
+  appearance: button;
+  opacity: 1;
   border: none;
   color: white;
   padding: 15px 32px;
@@ -8,7 +12,7 @@
   font-size: 16px;
   margin: 4px 2px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 .button1 { background-color: #4CAF50; } /* Green */
@@ -55,4 +59,26 @@ input {
 
 .small {
   width: 5em;
+}
+
+div.alert-none {
+  display: none;
+}
+
+div.alert-info {
+  display: block;
+  color: green;
+  text-align: center;
+}
+
+div.alert-warning {
+  display: block;
+  color: orange;
+  text-align: center;
+}
+
+div.alert-error {
+  display: block;
+  color: red;
+  text-align: center;
 }

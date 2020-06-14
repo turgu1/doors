@@ -11,7 +11,7 @@
   #define PUBLIC extern
 #endif
 
-#define MAX_PACKET_COUNT  10
+#define MAX_PACKET_COUNT  20
 #define PACKET_SIZE      512
 
 typedef enum { INT, BYTE, BOOL, STR } field_type;
@@ -29,7 +29,8 @@ typedef struct pkt_struct {
 } packet_struct;
 
 PUBLIC packet_struct * prepare_html(char * filename, 
-                                    field_struct * fields);
+                                    field_struct * fields,
+                                    int * size);
 PUBLIC void init_www_support();
 
 #undef PUBLIC

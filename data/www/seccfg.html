@@ -29,40 +29,29 @@
   <meta name="msapplication-config" content="./browserconfig.xml" />
 </head>
 <body>
-  <h1>Gestion des portes</h1>
+  <h1>Configuration: Sécurité</h1>
   <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
   <hr/>
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
-  <table>
-    <tbody>
-      <tr>
-        <td class="label">#{NAME_0}:</td>
-        <td><a class="button button2" href="./open?door=0">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=0">Ferme</a></td>
-      </tr>
-      <tr>
-        <td class="label">#{NAME_1}:</td>
-        <td><a class="button button2" href="./open?door=1">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=1">Ferme</a></td>
-      </tr>
-      <tr>
-        <td class="label">#{NAME_2}:</td>
-        <td><a class="button button2" href="./open?door=2">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=2">Ferme</a></td>
-      </tr>
-      <tr>
-        <td class="label">#{NAME_3}:</td>
-        <td><a class="button button2" href="./open?door=3">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=3">Ferme</a></td>
-      </tr>
-      <tr>
-        <td class="label">#{NAME_4}:</td>
-        <td><a class="button button2" href=""./open?door=4">Ouvre</a></td>
-        <td><a class="button button3" href=""./close?door=4">Ferme</a></td>
-      </tr>
-    </tbody>
-  </table>
+  <form action="./sec_update" method="post" class="form-style">
+    <div class="form-style">
+      <label for="oldpsw">Ancien mot de passe: </label>
+      <input type="password" maxlength="15" name="OLD" id="OLD" required title="Longueur maxi: 15" value="#{OLD}">
+    </div>
+    <div class="form-style">
+      <label for="newpsw">Nouveau mot de passe: </label>
+      <input type="password" maxlength="15" name="NEW" id="NEW" required title="Longueur maxi: 15" value="#{NEW}">
+    </div>
+    <div class="form-style">
+      <label for="checkpsw">Vérif. mot de passe: </label>
+      <input type="password" maxlength="15" name="VERIF" id="VERIF" required title="Longueur maxi: 15" value="#{VERIF}">
+    </div>
+    <div class="form-style">
+      <input type="submit" value="OK" class="submit button button2">
+    </div>
+  </form>
+
   <hr/>
-  <a class="button button1" type="button" href="./config">Configuration</a>
+  <a class="button button3" href="./config">Annuler</a>
 </body>
 </html>

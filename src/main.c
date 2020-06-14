@@ -50,6 +50,8 @@ bool doors_initializations()
 
 	ESP_ERROR_CHECK(nvs_flash_init());
 
+  init_http_server();
+  
   doors_get_config();
 
   return true;
