@@ -85,13 +85,13 @@ static bool wifi_init_ap()
     .ap = {
       .ssid = AP_SSID,
       .ssid_len = strlen(AP_SSID),
-      .password = AP_PSW,
+      .password = AP_PWD,
       .max_connection = MAX_STA_CONN,
       .authmode = WIFI_AUTH_WPA_WPA2_PSK
     },
   };
 
-  if (strlen(AP_PSW) == 0) {
+  if (strlen(AP_PWD) == 0) {
     wifi_config.ap.authmode = WIFI_AUTH_OPEN;
   }
 
@@ -100,7 +100,7 @@ static bool wifi_init_ap()
   ESP_ERROR_CHECK(esp_wifi_start());
 
   ESP_LOGI(TAG, "wifi_init_ap finished. SSID:%s password:%s",
-          AP_SSID, AP_PSW);
+          AP_SSID, AP_PWD);
 
   return true;
 }
