@@ -246,7 +246,7 @@ static void http_server_netconn_serve(struct netconn *conn)
     // there are other formats for GET, and we're keeping it very simple)
 
     char * path = NULL;
-	  char * line_end;
+    char * line_end;
     int param_count;
 
     packet_struct * pkts = NULL;
@@ -269,21 +269,21 @@ static void http_server_netconn_serve(struct netconn *conn)
       // Content-Length: 72
       // Accept-Language: en-ca
 
-			line_end = strchr(buf, '\n');
+      line_end = strchr(buf, '\n');
 
-			if (line_end != NULL) {
-				//Extract the path from HTTP GET request
-				path = (char *) malloc(sizeof(char) * (line_end - buf + 1));
-				int path_length = line_end - buf - strlen("POST ") - strlen("HTTP/1.1") - 2;
-				strncpy(path, &buf[5], path_length);
-				path[path_length] = '\0';
+      if (line_end != NULL) {
+        //Extract the path from HTTP GET request
+        path = (char *) malloc(sizeof(char) * (line_end - buf + 1));
+        int path_length = line_end - buf - strlen("POST ") - strlen("HTTP/1.1") - 2;
+        strncpy(path, &buf[5], path_length);
+        path[path_length] = '\0';
 
-				//Get remote IP address
-				ip_addr_t remote_ip;
-				u16_t     remote_port;
-				netconn_getaddr(conn, &remote_ip, &remote_port, 0);
-				ESP_LOGI(TAG, "[ "IPSTR" ] POST %s", IP2STR(&(remote_ip.u_addr.ip4)), path);
-			}
+        //Get remote IP address
+        ip_addr_t remote_ip;
+        u16_t     remote_port;
+        netconn_getaddr(conn, &remote_ip, &remote_port, 0);
+        ESP_LOGI(TAG, "[ "IPSTR" ] POST %s", IP2STR(&(remote_ip.u_addr.ip4)), path);
+      }
 
       netbuf_delete(inbuf);
 
@@ -474,10 +474,10 @@ static void http_server_netconn_serve(struct netconn *conn)
         ESP_LOGW(TAG, "Received nothing.");
       }
     }
-		else if ((buflen >= 5) && (strncmp("GET ", buf, 4) == 0)) {
+    else if ((buflen >= 5) && (strncmp("GET ", buf, 4) == 0)) {
 
-			// sample:
-			// 	GET /l HTTP/1.1
+      // sample:
+      // GET /l HTTP/1.1
       //
       // Accept: text/html, application/xhtml+xml, image/jxr,
       // Referer: http://192.168.1.222/h
@@ -487,37 +487,37 @@ static void http_server_netconn_serve(struct netconn *conn)
       // Host: 192.168.1.222
       // Connection: Keep-Alive
 
-			//Parse URL
-			
-			line_end = strchr(buf, '\n');
+      //Parse URL
+      
+      line_end = strchr(buf, '\n');
 
-			if (line_end != NULL) {
-				//Extract the path from HTTP GET request
-				path = (char *) malloc(sizeof(char) * (line_end - buf + 1));
-				int path_length = line_end - buf - strlen("GET ") - strlen("HTTP/1.1") - 2;
-				strncpy(path, &buf[4], path_length);
-				path[path_length] = '\0';
+      if (line_end != NULL) {
+        //Extract the path from HTTP GET request
+        path = (char *) malloc(sizeof(char) * (line_end - buf + 1));
+        int path_length = line_end - buf - strlen("GET ") - strlen("HTTP/1.1") - 2;
+        strncpy(path, &buf[4], path_length);
+        path[path_length] = '\0';
 
-				//Get remote IP address
-				ip_addr_t remote_ip;
-				u16_t     remote_port;
-				netconn_getaddr(conn, &remote_ip, &remote_port, 0);
-				ESP_LOGI(TAG, "[ "IPSTR" ] GET %s", IP2STR(&(remote_ip.u_addr.ip4)), path);
-			}
+        //Get remote IP address
+        ip_addr_t remote_ip;
+        u16_t     remote_port;
+        netconn_getaddr(conn, &remote_ip, &remote_port, 0);
+        ESP_LOGI(TAG, "[ "IPSTR" ] GET %s", IP2STR(&(remote_ip.u_addr.ip4)), path);
+      }
 
-			if (path != NULL) {
+      if (path != NULL) {
 
         param_count = extract_params(path, true);
 
-				if (strcmp("/config", path) == 0) {
+        if (strcmp("/config", path) == 0) {
           hdr = http_html_hdr;
           pkts = prepare_html("/spiffs/www/config.html", no_param_fields, &size);
-				}
-				else if (strcmp("/doorscfg", path) == 0) {
+        }
+        else if (strcmp("/doorscfg", path) == 0) {
           hdr = http_html_hdr;
           pkts = prepare_html("/spiffs/www/doorscfg.html", no_param_fields, &size);
-				}
-				else if (strcmp("/doorcfg", path) == 0) {
+        }
+        else if (strcmp("/doorcfg", path) == 0) {
           if (strcmp(params[0].name, "door") == 0) {
             int door_idx = atoi(params[0].value);
             if ((door_idx < 0) || (door_idx >= 5)) {
@@ -542,8 +542,8 @@ static void http_server_netconn_serve(struct netconn *conn)
           else {
             ESP_LOGE(TAG, "Param unknown: %s.", params[0].name);
           }
-				}
-				else if (strcmp("/netcfg", path) == 0) {
+        }
+        else if (strcmp("/netcfg", path) == 0) {
           strcpy(wifi_ssid,  doors_config.network.ssid);
           strcpy(wifi_pwd,   doors_config.network.pwd);
           inet_pton(AF_INET, doors_config.network.ip,   &ip.ip);
@@ -552,19 +552,19 @@ static void http_server_netconn_serve(struct netconn *conn)
 
           hdr = http_html_hdr;
           pkts = prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
-				}
-				else if (strcmp("/seccfg", path) == 0) {
+        }
+        else if (strcmp("/seccfg", path) == 0) {
           new_pwd[0]   = 0;
           old_pwd[0]   = 0;
           verif_pwd[0] = 0;
           hdr = http_html_hdr;
           pkts = prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);
-				}
-				else if (strcmp("/style.css", path) == 0) {
+        }
+        else if (strcmp("/style.css", path) == 0) {
           hdr = http_css_hdr;
           pkts = prepare_html("/spiffs/www/style.css", NULL, &size);
-				}
-				else if (strcmp("/open", path) == 0) {
+        }
+        else if (strcmp("/open", path) == 0) {
           if ((param_count == 1) && (strcmp(params[0].name, "door") == 0)) {
             ESP_LOGI(TAG, "Open door %s", params[0].value);
             int idx = atoi(params[0].value);
@@ -587,8 +587,8 @@ static void http_server_netconn_serve(struct netconn *conn)
           }
           hdr = http_html_hdr;
           pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
-				}
-				else if (strcmp("/close", path) == 0) {
+        }
+        else if (strcmp("/close", path) == 0) {
           if (strcmp(params[0].name, "door") == 0) {
             ESP_LOGI(TAG, "Close door %s", params[0].value);
             int idx = atoi(params[0].value);
@@ -611,11 +611,11 @@ static void http_server_netconn_serve(struct netconn *conn)
           }
           hdr = http_html_hdr;
           pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
-				}
-				else if ((strcmp("/index", path) == 0) || (strcmp("/", path) == 0)) {
+        }
+        else if ((strcmp("/index", path) == 0) || (strcmp("/", path) == 0)) {
           hdr = http_html_hdr;
           pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
-				}
+        }
         else if (strncmp("/favicon-", path, 9) == 0) {
           char * fname = (char *) malloc(strlen(path) + strlen("/spiffs/www") + 5);
           strcpy(fname, "/spiffs/www");
@@ -652,12 +652,12 @@ static void http_server_netconn_serve(struct netconn *conn)
           ESP_LOGE(TAG, "Unknown path: %s.", path);
           hdr = http_html_hdr_not_found;
         }
-			}
+      }
       else {
         hdr = http_html_hdr;
         pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
       }
-		}
+    }
 
     // Send HTTP response header
     if (hdr) {
@@ -682,14 +682,14 @@ static void http_server_netconn_serve(struct netconn *conn)
       free(path);
       path = NULL;
     }
-	}
+  }
 
-	// Close the connection (server closes in HTTP)
-	netconn_close(conn);
+  // Close the connection (server closes in HTTP)
+  netconn_close(conn);
 
-	// Delete the buffer (netconn_recv gives us ownership,
-	// so we have to make sure to deallocate the buffer)
-	netbuf_delete(inbuf);
+  // Delete the buffer (netconn_recv gives us ownership,
+  // so we have to make sure to deallocate the buffer)
+  netbuf_delete(inbuf);
 
   if (png_buffer != NULL) {
     free(png_buffer);
@@ -699,29 +699,29 @@ static void http_server_netconn_serve(struct netconn *conn)
 
 static void http_server(void *pvParameters) 
 {
-	struct netconn *conn, *newconn;	//conn is listening thread, newconn is new thread for each client
-	err_t err;
-	conn = netconn_new(NETCONN_TCP);
-	netconn_bind(conn, NULL, 80);
-	netconn_listen(conn);
+  struct netconn *conn, *newconn;  //conn is listening thread, newconn is new thread for each client
+  err_t err;
+  conn = netconn_new(NETCONN_TCP);
+  netconn_bind(conn, NULL, 80);
+  netconn_listen(conn);
 
-	do {
-		err = netconn_accept(conn, &newconn);
-		if (err == ERR_OK) {
-			http_server_netconn_serve(newconn);
-			netconn_delete(newconn);
-		}
-	} while (err == ERR_OK);
-	
+  do {
+    err = netconn_accept(conn, &newconn);
+    if (err == ERR_OK) {
+      http_server_netconn_serve(newconn);
+      netconn_delete(newconn);
+    }
+  } while (err == ERR_OK);
+  
   netconn_close(conn);
-	netconn_delete(conn);
+  netconn_delete(conn);
 }
 
 void start_http_server() 
 {
-	ESP_LOGI(TAG, "Web App is running ... ...");
+  ESP_LOGI(TAG, "Web App is running ... ...");
 
-	xTaskCreate(&http_server, "http_server", 2048, NULL, 5, NULL);
+  xTaskCreate(&http_server, "http_server", 2048, NULL, 5, NULL);
 }
 
 void init_http_server()
