@@ -29,14 +29,14 @@
   <meta name="msapplication-config" content="./browserconfig.xml" />
 </head>
 <body>
-  <h1>Config: Sécurité</h1>
+  <h1>Essais GPIO</h1>
   <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
   <hr/>
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
-  <form action="./sec_update" method="post" class="form-style">
+  <form action="./testgpio_update" method="post" class="form-style">
     <div class="form-style">
-      <label for="oldpsw">Ancien mot de passe: </label>
-      <input type="password" maxlength="15" name="OLD" id="OLD" required title="Longueur maxi: 15" value="#{OLD}">
+      <label for="GPIO">GPIO: </label>
+      <input type="number" min="0" max="255" class="small" name="GPIO" id="GPIO" required title="Longueur maxi: 15" value="#{GPIO}">
     </div>
     <div class="form-style">
       <label for="newpsw">Nouveau mot de passe: </label>

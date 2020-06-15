@@ -33,5 +33,10 @@ PUBLIC packet_struct * prepare_html(char * filename,
                                     int * size);
 PUBLIC void init_www_support();
 
+PUBLIC void extract_params(char * str, bool get);
+PUBLIC bool get_byte(char * label, uint8_t * val);
+PUBLIC bool get_bool(char * label, bool * val);
+PUBLIC bool  get_str(char * label, char * val, int size);
+
 #undef PUBLIC
 #endif

@@ -1,6 +1,10 @@
 #include "doors.h"
 #include "www_support.h"
 #include "doors_config.h"
+#include "doors_www_sec.h"
+#include "doors_www_net.h"
+#include "doors_www_door.h"
+#include "doors_www_testgpio.h"
 #include "secure.h"
 
 #define DOORS_WWW 1
@@ -37,182 +41,6 @@ field_struct index_fields[9] = {
   { NULL,             STR, "SEVERITY_1", severity_1                 }
 };
 
-union {
-  uint32_t ip;
-  uint8_t  ip_num[4];
-} ip, mask, gw;
-
-char wifi_ssid[SSID_SIZE];
-char wifi_pwd[PWD_SIZE];
-
-field_struct net_fields[18] = {
-  { &net_fields[ 1], STR,  "SSID",       wifi_ssid                  },
-  { &net_fields[ 2], STR,  "PWD",        wifi_pwd                   },
-  { &net_fields[ 3], BYTE, "IP_0",       &ip.ip_num[0]              },
-  { &net_fields[ 4], BYTE, "IP_1",       &ip.ip_num[1]              },
-  { &net_fields[ 5], BYTE, "IP_2",       &ip.ip_num[2]              },
-  { &net_fields[ 6], BYTE, "IP_3",       &ip.ip_num[3]              },
-  { &net_fields[ 7], BYTE, "MASK_0",     &mask.ip_num[0]            },
-  { &net_fields[ 8], BYTE, "MASK_1",     &mask.ip_num[1]            },
-  { &net_fields[ 9], BYTE, "MASK_2",     &mask.ip_num[2]            },
-  { &net_fields[10], BYTE, "MASK_3",     &mask.ip_num[3]            },
-  { &net_fields[11], BYTE, "GW_0",       &gw.ip_num[0]              },
-  { &net_fields[12], BYTE, "GW_1",       &gw.ip_num[1]              },
-  { &net_fields[13], BYTE, "GW_2",       &gw.ip_num[2]              },
-  { &net_fields[14], BYTE, "GW_3",       &gw.ip_num[3]              },
-  { &net_fields[15], STR,  "MSG_0",      message_0                  },
-  { &net_fields[16], STR,  "MSG_1",      message_1                  },
-  { &net_fields[17], STR,  "SEVERITY_0", severity_0                 },
-  { NULL,            STR,  "SEVERITY_1", severity_1                 }
-};
-
-char old_pwd[PWD_SIZE];
-char new_pwd[PWD_SIZE];
-char verif_pwd[PWD_SIZE];
-
-field_struct sec_fields[7] = {
-  { &sec_fields[1], STR, "OLD",        old_pwd    },
-  { &sec_fields[2], STR, "NEW",        new_pwd    },
-  { &sec_fields[3], STR, "VERIF",      verif_pwd  },
-  { &sec_fields[4], STR, "MSG_0",      message_0  },
-  { &sec_fields[5], STR, "MSG_1",      message_1  },
-  { &sec_fields[6], STR, "SEVERITY_0", severity_0 },
-  { NULL,           STR, "SEVERITY_1", severity_1 }
-};
-
-int door_idx;
-char seq_open[SEQ_SIZE];
-char seq_close[SEQ_SIZE];
-
-field_struct door_fields[12] = {
-  { &door_fields[ 1], STR,  "NAME",       NULL       },
-  { &door_fields[ 2], BYTE, "BOPEN",      NULL       },
-  { &door_fields[ 3], BYTE, "BCLOSE",     NULL       },
-  { &door_fields[ 4], BYTE, "ROPEN",      NULL       },
-  { &door_fields[ 5], BYTE, "RCLOSE",     NULL       },
-  { &door_fields[ 6], STR,  "SOPEN",      NULL       },
-  { &door_fields[ 7], STR,  "SCLOSE",     NULL       },
-  { &door_fields[ 8], INT,  "DOOR_NBR",   &door_idx  },
-  { &door_fields[ 9], STR,  "MSG_0",      message_0  },
-  { &door_fields[10], STR,  "MSG_1",      message_1  },
-  { &door_fields[11], STR,  "SEVERITY_0", severity_0 },
-  { NULL,             STR,  "SEVERITY_1", severity_1 }
-};
-
-// http headers
-static char http_html_hdr[] =
-  "HTTP/1.1 200 OK\r\n"
-  "Content-type: text/html\r\n"
-  "Content-Length: %d\r\n\r\n";
-
-static char http_xml_hdr[] =
-  "HTTP/1.1 200 OK\r\n"
-  "Content-type: application/xml\r\n"
-  "Content-Length: %d\r\n\r\n";
-
-static char http_html_hdr_not_found[] =
-  "HTTP/1.1 404 Not Found\r\n"
-  "Content-type: text/html\r\n\r\n"
-  "<html><body><p>Error 404: Command not found.</p></body></html>";
-
-static char http_css_hdr[] =
-  "HTTP/1.1 200 OK\r\n"
-  "Content-type: text/css\r\n"
-  "Content-Length: %d\r\n\r\n";
-
-static char http_png_hdr[] =
-  "HTTP/1.1 200 OK\r\n"
-  "Content-type: image/png\r\n"
-  "Content-Length: %d\r\n\r\n";
-
-// url parameter extraction struc
-struct {
-  char name[16];
-  char value[32];
-} params[15];
-int param_count;
-
-// Extract parameters from url string. Parameters are separated from the
-// server location/command selection part of the url with character '?'.
-// Every parameter is separated from each other with character '&'.
-//
-// Parameter:
-//    char * str
-//      URL to parse
-//
-// Return value: int
-//    number of parameters parsed.
-static int extract_params(char * str, bool get)
-{
-  int idx = 0;
-
-  if (get) while (*str && (*str != '?')) str++;
-  if (*str) {
-    if (get) *str++ = 0;
-    while (*str && (idx < 15)) {
-      int len = 0;
-      while (isalpha(*str) && (len < 15)) params[idx].name[len++] = *str++;
-      params[idx].name[len] = 0;
-      while (*str && (*str != '&') && (*str != '=')) str++;
-      len = 0;
-      if (*str == '=') {
-        str++;
-        while ((len < 31) && (*str) && (*str != '&')) {
-          if (*str == '+') {
-            params[idx].value[len++] = ' ';
-            str++;
-          }
-          else {
-            params[idx].value[len++] = *str++;
-          }
-        }
-        while (*str && (*str != '&')) str++;
-      }
-      params[idx].value[len] = 0;
-      idx++;
-      if (*str == '&') str++;
-    } 
-  } 
-
-  return idx;
-}
-
-bool get_byte(char * label, uint8_t * val)
-{
-  int idx = 0;
-  int v;
-
-  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
-  if (idx < param_count) {
-    v = atoi(params[idx].value);
-    if ((v >= 0) && (v <= 255)) {
-      *val = v;
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
-  return false;
-}
-
-bool get_str(char * label, char * val, int size)
-{
-  int idx = 0;
-
-  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
-  if (idx < param_count) {
-    if (strlen(params[idx].value) < (size - 1)) {
-      strcpy(val, params[idx].value);
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
-  return false;
-}
-
 static void send_header(struct netconn *conn, char * hdr, int size)
 {
   static char buff[256];
@@ -220,6 +48,8 @@ static void send_header(struct netconn *conn, char * hdr, int size)
   snprintf(buff, 256, hdr, size);
   netconn_write(conn, buff, strlen(buff), NETCONN_NOCOPY);
 }
+
+static uint8_t door_idx;
 
 static void http_server_netconn_serve(struct netconn *conn)
 {
@@ -247,7 +77,6 @@ static void http_server_netconn_serve(struct netconn *conn)
 
     char * path = NULL;
     char * line_end;
-    int param_count;
 
     packet_struct * pkts = NULL;
     char          * hdr  = NULL;
@@ -297,178 +126,12 @@ static void http_server_netconn_serve(struct netconn *conn)
         fputc('\n', stdout);
         fflush(stdout);
 
-        param_count = extract_params(buf, false);
+        extract_params(buf, false);
 
-        bool   complete;
-        char * field;
-
-        if (strcmp(path, "/door_update") == 0) {
-          static uint8_t button_open, button_close, relay_open, relay_close;
-          static char seq_open_str[100], seq_close_str[100];
-          static uint8_t seq_open[SEQ_SIZE], seq_close[SEQ_SIZE];
-          static char name[NAME_SIZE];
-          static uint8_t door_idx;
-          complete = false;
-
-          while (true) {
-            field = "Id Porte";           if (!get_byte("DOOR_NBR",&door_idx       )) break;
-                                          if (door_idx > 4) break;
-            field = "Nom";                if (!get_str( "NAME",     name, NAME_SIZE)) break;
-            field = "GPIO Bouton Ouvrir"; if (!get_byte("BOPEN",   &button_open    )) break;
-            field = "GPIO Bouton Fermer"; if (!get_byte("BCLOSE",  &button_close   )) break;
-            field = "Relais Ouvrir";      if (!get_byte("ROPEN",   &relay_open     )) break;
-            field = "Relais Fermer";      if (!get_byte("RCLOSE",  &relay_close    )) break;
-
-            field = "Séquence Ouvrir";    if (!get_str( "SOPEN",    seq_open_str,  100 )) break;
-                                          memset(seq_open, 0, SEQ_SIZE);
-                                          if (!parse_seq(seq_open, seq_open_str, SEQ_SIZE)) break;
-
-            field = "Séquence Fermer";    if (!get_str( "SCLOSE",   seq_close_str, 100 )) break;
-                                          memset(seq_close, 0, SEQ_SIZE);
-                                          if (!parse_seq(seq_close, seq_close_str, SEQ_SIZE)) break;
-
-            complete = true;
-            break;
-          }
-          if (complete) {
-            // Save values
-            memset(doors_config.doors[door_idx].name, 0, NAME_SIZE);
-            strcpy(doors_config.doors[door_idx].name, name);
-            
-            doors_config.doors[door_idx].gpio_button_open  = button_open;
-            doors_config.doors[door_idx].gpio_button_close = button_close;
-            doors_config.doors[door_idx].gpio_relay_open   = relay_open;
-            doors_config.doors[door_idx].gpio_relay_close  = relay_close;
-
-            memcpy(doors_config.doors[door_idx].seq_open, seq_open, SEQ_SIZE);
-            memcpy(doors_config.doors[door_idx].seq_close, seq_close, SEQ_SIZE);
-
-            seq_to_str(doors_config.doors[door_idx].seq_open,  seq_open_str,  SEQ_SIZE - 1);
-            seq_to_str(doors_config.doors[door_idx].seq_close, seq_close_str, SEQ_SIZE - 1);
-
-            door_fields[0].value =  doors_config.doors[door_idx].name;
-            door_fields[1].value = &doors_config.doors[door_idx].gpio_button_open;
-            door_fields[2].value = &doors_config.doors[door_idx].gpio_button_close;
-            door_fields[3].value = &doors_config.doors[door_idx].gpio_relay_open;
-            door_fields[4].value = &doors_config.doors[door_idx].gpio_relay_close;
-            door_fields[5].value =  seq_open_str;
-            door_fields[6].value =  seq_close_str;
-
-            if (doors_save_config()) {
-              strcpy(message_1,  "Mise à jour complétée.");
-              strcpy(severity_1, "info");
-            }
-            else {
-              strcpy(message_1,  "ERREUR INTERNE!!");
-              strcpy(severity_1, "error");
-            }
-          }
-          else {
-            strcpy(message_1,  "Champ en erreur: ");
-            strcat(message_1,  field);
-            strcpy(severity_1, "error");
-
-            door_fields[0].value =  name;
-            door_fields[1].value = &button_open;
-            door_fields[2].value = &button_close;
-            door_fields[3].value = &relay_open;
-            door_fields[4].value = &relay_close;
-            door_fields[5].value =  seq_open_str;
-            door_fields[6].value =  seq_close_str;
-          }
-
-          hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              
-        }
-        else if (strcmp(path, "/sec_update") == 0) {
-          complete = false;
-          while (true) {
-            field = "Ancien m.de.p.";  if (!get_str("OLD",   old_pwd,   PWD_SIZE)) break;
-                                       if ((strcmp(old_pwd, doors_config.pwd) != 0) && 
-                                           (strcmp(old_pwd, BACKDOOR_PWD) != 0)) break;
-
-            field = "Nouveau m.de.p."; if (!get_str("NEW",   new_pwd,   PWD_SIZE)) break;
-                                       if (strlen(new_pwd) <= 8) break;
-
-            field = "Vérif. m.de.p.";  if (!get_str("VERIF", verif_pwd, PWD_SIZE)) break;
-                                       if (strcmp(new_pwd, verif_pwd) != 0) break;
-            complete = true;
-            break;
-          }
-          if (complete) {
-            memset(doors_config.pwd, 0, PWD_SIZE);
-            strcpy(doors_config.pwd, new_pwd);
-
-            if (doors_save_config()) {
-              strcpy(message_1,  "Mise à jour complétée.");
-              strcpy(severity_1, "info");
-            }
-            else {
-              strcpy(message_1,  "ERREUR INTERNE!!");
-              strcpy(severity_1, "error");
-            }
-          }
-          else {
-            strcpy(message_1,  "Champ en erreur: ");
-            strcat(message_1,  field);
-            strcpy(severity_1, "error");
-          }
-          
-          hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);         
-        }
-        else if (strcmp(path, "/net_update") == 0) {
-          complete = false;
-          while (true) {
-            field = "SSID";          if (!get_str( "SSID", wifi_ssid, SSID_SIZE)) break;
-            field = "Mot de passe";  if (!get_str( "PWD",  wifi_pwd,  PWD_SIZE )) break;
-            field = "Adr. IP";       if (!get_byte("IP_0",   &ip.ip_num[0]  )) break;
-                                     if (!get_byte("IP_1",   &ip.ip_num[1]  )) break;
-                                     if (!get_byte("IP_2",   &ip.ip_num[2]  )) break;
-                                     if (!get_byte("IP_3",   &ip.ip_num[3]  )) break;
-            field = "Masque";        if (!get_byte("MASK_0", &mask.ip_num[0])) break;
-                                     if (!get_byte("MASK_1", &mask.ip_num[1])) break;
-                                     if (!get_byte("MASK_2", &mask.ip_num[2])) break;
-                                     if (!get_byte("MASK_3", &mask.ip_num[3])) break;
-            field = "Routeur. IP";   if (!get_byte("GW_0",   &gw.ip_num[0]  )) break;
-                                     if (!get_byte("GW_1",   &gw.ip_num[1]  )) break;
-                                     if (!get_byte("GW_2",   &gw.ip_num[2]  )) break;
-                                     if (!get_byte("GW_3",   &gw.ip_num[3]  )) break;
-            complete = true;
-            break;
-          }
-          if (complete) {
-            memset(doors_config.network.ssid, 0, SSID_SIZE);
-            strcpy(doors_config.network.ssid, wifi_ssid);
-
-            memset(doors_config.network.pwd, 0, PWD_SIZE);
-            strcpy(doors_config.network.pwd, wifi_pwd);
-
-            memset(doors_config.network.ip,   0, IP_SIZE);
-            memset(doors_config.network.mask, 0, IP_SIZE);
-            memset(doors_config.network.gw,   0, IP_SIZE);
-
-            sprintf(doors_config.network.ip,   "%u.%u.%u.%u",   ip.ip_num[0],   ip.ip_num[1],   ip.ip_num[2],   ip.ip_num[3]);
-            sprintf(doors_config.network.mask, "%u.%u.%u.%u", mask.ip_num[0], mask.ip_num[1], mask.ip_num[2], mask.ip_num[3]);
-            sprintf(doors_config.network.gw,   "%u.%u.%u.%u",   gw.ip_num[0],   gw.ip_num[1],   gw.ip_num[2],   gw.ip_num[3]);
-
-            if (doors_save_config()) {
-              strcpy(message_1,  "Mise à jour complétée.");
-              strcpy(severity_1, "info");
-            }
-            else {
-              strcpy(message_1,  "ERREUR INTERNE!!");
-              strcpy(severity_1, "error");
-            }
-          }
-          else {
-            strcpy(message_1,  "Champ en erreur: ");
-            strcat(message_1,  field);
-            strcpy(severity_1, "error");
-          }          
-          hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
-        }
+        if      (strcmp(path, "/door_update") == 0) size = door_update(&hdr, &pkts);
+        else if (strcmp(path, "/sec_update" ) == 0) size =  sec_update(&hdr, &pkts);
+        else if (strcmp(path, "/net_update" ) == 0) size =  net_update(&hdr, &pkts);
+        else if (strcmp(path, "/testgpio_update" ) == 0) size =  testgpio_update(&hdr, &pkts);
       }
       else {
         ESP_LOGW(TAG, "Received nothing.");
@@ -507,7 +170,7 @@ static void http_server_netconn_serve(struct netconn *conn)
 
       if (path != NULL) {
 
-        param_count = extract_params(path, true);
+        extract_params(path, true);
 
         if (strcmp("/config", path) == 0) {
           hdr = http_html_hdr;
@@ -518,70 +181,38 @@ static void http_server_netconn_serve(struct netconn *conn)
           pkts = prepare_html("/spiffs/www/doorscfg.html", no_param_fields, &size);
         }
         else if (strcmp("/doorcfg", path) == 0) {
-          if (strcmp(params[0].name, "door") == 0) {
-            int door_idx = atoi(params[0].value);
-            if ((door_idx < 0) || (door_idx >= 5)) {
-              ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
-            }
-            else {
-              seq_to_str(doors_config.doors[door_idx].seq_open,  seq_open,  SEQ_SIZE - 1);
-              seq_to_str(doors_config.doors[door_idx].seq_close, seq_close, SEQ_SIZE - 1);
-
-              door_fields[0].value =  doors_config.doors[door_idx].name;
-              door_fields[1].value = &doors_config.doors[door_idx].gpio_button_open;
-              door_fields[2].value = &doors_config.doors[door_idx].gpio_button_close;
-              door_fields[3].value = &doors_config.doors[door_idx].gpio_relay_open;
-              door_fields[4].value = &doors_config.doors[door_idx].gpio_relay_close;
-              door_fields[5].value =  seq_open;
-              door_fields[6].value =  seq_close;
-
-              hdr = http_html_hdr;
-              pkts = prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              
-            }
-          }
-          else {
-            ESP_LOGE(TAG, "Param unknown: %s.", params[0].name);
-          }
+          size = door_edit(&hdr, &pkts);
         }
         else if (strcmp("/netcfg", path) == 0) {
-          strcpy(wifi_ssid,  doors_config.network.ssid);
-          strcpy(wifi_pwd,   doors_config.network.pwd);
-          inet_pton(AF_INET, doors_config.network.ip,   &ip.ip);
-          inet_pton(AF_INET, doors_config.network.gw,   &gw.ip);
-          inet_pton(AF_INET, doors_config.network.mask, &mask.ip);
-
-          hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
+          size = net_edit(&hdr, &pkts);
         }
         else if (strcmp("/seccfg", path) == 0) {
-          new_pwd[0]   = 0;
-          old_pwd[0]   = 0;
-          verif_pwd[0] = 0;
-          hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);
+          size = sec_edit(&hdr, &pkts);
+        }
+        else if (strcmp("/testgpio", path) == 0) {
+          size = testgpio_edit(&hdr, &pkts);
         }
         else if (strcmp("/style.css", path) == 0) {
           hdr = http_css_hdr;
           pkts = prepare_html("/spiffs/www/style.css", NULL, &size);
         }
         else if (strcmp("/open", path) == 0) {
-          if ((param_count == 1) && (strcmp(params[0].name, "door") == 0)) {
-            ESP_LOGI(TAG, "Open door %s", params[0].value);
-            int idx = atoi(params[0].value);
-            if ((idx >= 0) && (idx < 5)) {
+          if (get_byte("door", &door_idx)) {
+            ESP_LOGI(TAG, "Open door %d.", door_idx);
+            if (door_idx < DOOR_COUNT) {
               strcpy(message_1, "Ouverture de ");
-              strcat(message_1, doors_config.doors[idx].name);
+              strcat(message_1, doors_config.doors[door_idx].name);
               strcpy(severity_1, "info");
               // open_door(idx)
             }
             else {
-              ESP_LOGE(TAG, "Door number not valid: %d", idx);
+              ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
               strcpy(message_1, "Porte non valide.");
               strcpy(severity_1, "error");
             }
           }
           else {
-            ESP_LOGE(TAG, "Param unknown: %s.", params[0].name);
+            ESP_LOGE(TAG, "Param unknown: door.");
             strcpy(message_1, "Parametre non valide.");
             strcpy(severity_1, "error");
           }
@@ -589,23 +220,22 @@ static void http_server_netconn_serve(struct netconn *conn)
           pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
         }
         else if (strcmp("/close", path) == 0) {
-          if (strcmp(params[0].name, "door") == 0) {
-            ESP_LOGI(TAG, "Close door %s", params[0].value);
-            int idx = atoi(params[0].value);
-            if ((idx >= 0) && (idx < 5)) {
+          if (get_byte("door", &door_idx)) {
+            ESP_LOGI(TAG, "Close door %d.", door_idx);
+            if (door_idx < DOOR_COUNT) {
               strcpy(message_1, "Fermeture de ");
-              strcat(message_1, doors_config.doors[idx].name);
+              strcat(message_1, doors_config.doors[door_idx].name);
               strcpy(severity_1, "info");
               // close_door(idx)
             }
             else {
-              ESP_LOGE(TAG, "Door number not valid: %d", idx);
+              ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
               strcpy(message_1, "Porte non valide.");
               strcpy(severity_1, "error");
             }
           }
           else {
-            ESP_LOGE(TAG, "Param unknown: %s.", params[0].name);
+            ESP_LOGE(TAG, "Param unknown: door.");
             strcpy(message_1, "Parametre non valide.");
             strcpy(severity_1, "error");
           }

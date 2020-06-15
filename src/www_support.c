@@ -33,6 +33,120 @@
 
 static const char * TAG = "WWW_SUPPORT";
 
+// ---- parameters extraction ---------------------------------------------------------------------
+
+// url parameter extraction struc
+static struct {
+  char name[16];
+  char value[32];
+} params[15];
+static int param_count;
+
+// Extract parameters from url string. Parameters are separated from the
+// server location/command selection part of the url with character '?'.
+// Every parameter is separated from each other with character '&'.
+//
+// Parameter:
+//    char * str
+//      URL to parse
+//
+// Return value: int
+//    number of parameters parsed.
+
+void extract_params(char * str, bool get)
+{
+  int idx = 0;
+
+  if (get) while (*str && (*str != '?')) str++;
+  if (*str) {
+    if (get) *str++ = 0;
+    while (*str && (idx < 15)) {
+      int len = 0;
+      while (isalpha(*str) && (len < 15)) params[idx].name[len++] = *str++;
+      params[idx].name[len] = 0;
+      while (*str && (*str != '&') && (*str != '=')) str++;
+      len = 0;
+      if (*str == '=') {
+        str++;
+        while ((len < 31) && (*str) && (*str != '&')) {
+          if (*str == '+') {
+            params[idx].value[len++] = ' ';
+            str++;
+          }
+          else {
+            params[idx].value[len++] = *str++;
+          }
+        }
+        while (*str && (*str != '&')) str++;
+      }
+      params[idx].value[len] = 0;
+      idx++;
+      if (*str == '&') str++;
+    } 
+  } 
+
+  param_count = idx;
+}
+
+bool get_byte(char * label, uint8_t * val)
+{
+  int idx = 0;
+  int v;
+
+  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  if (idx < param_count) {
+    v = atoi(params[idx].value);
+    if ((v >= 0) && (v <= 255)) {
+      *val = v;
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  return false;
+}
+
+bool get_bool(char * label, bool * val)
+{
+  int idx = 0;
+  int v;
+
+  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  if (idx < param_count) {
+    v = atoi(params[idx].value);
+    if ((v == 0) || (v == 1)) {
+      *val = (v == 1);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  *val = false;
+  return true;
+}
+
+bool get_str(char * label, char * val, int size)
+{
+  int idx = 0;
+
+  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  if (idx < param_count) {
+    if (strlen(params[idx].value) < (size - 1)) {
+      strcpy(val, params[idx].value);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  return false;
+}
+
+// ---- HTML Preparation --------------------------------------------------------------------------
+
 // We read file into buffer 256 character at a time
 static char buffer[256];
 static int  file_size;

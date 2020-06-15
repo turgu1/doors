@@ -29,13 +29,17 @@
   <meta name="msapplication-config" content="./browserconfig.xml" />
 </head>
 <body>
-  <h1>Configuration: Porte #{DOOR_NBR}</h1>
+  <h1>Config: Porte #{DOOR_NBR}</h1>
   <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
   <hr/>
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
   <form action="./door_update" method="post" class="form-style">
     <div class="form-body">
-      <input type="number" hidden="1" name="DOOR_NBR" id="DOOR_NBR" value="#{DOOR_NBR}"/>
+      <input type="number" hidden="1" name="DOOR_IDX" id="DOOR_IDX" value="#{DOOR_IDX}"/>
+      <div class="form-style">
+        <label for="name">Actif: </label>
+        <input type="checkbox" name="ENABLED" id="ENABLED" title="En opération ou non" #{ENABLED} value="1"/>
+      </div>
       <div class="form-style">
         <label for="name">Nom: </label>
         <input type="text" maxlength="31" name="NAME" id="NAME" title="Longueur maxi: 31" value="#{NAME}"/>

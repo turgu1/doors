@@ -82,13 +82,12 @@ void app_main(void)
   
   if (start_network()) {
     ESP_LOGI(TAG, "Network started.");
+    start_http_server();
   }
   else {
     ESP_LOGE(TAG, "Unable to start network. Software issue...");
   }
  
-  start_http_server();
-
   // printf("Restarting in 500 seconds ");
   // for (int i = 500; i >= 0; i--) {
   //   printf(".");

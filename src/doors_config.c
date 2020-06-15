@@ -1,8 +1,9 @@
 #include "doors.h"
+#include "secure.h"
+#include "doors_www.h"
 
 #include "esp32/rom/crc.h"
 #include "cJSON.h"
-#include "secure.h"
 
 #define DOORS_CONFIG 1
 #include "doors_config.h"
@@ -25,9 +26,9 @@ static bool check(uint8_t gpio, uint64_t * all, uint64_t gpios)
   return true;
 }
 
-#define VERIF0(b, msg) if (!b) { sprintf(error_msg, msg); return false; }
-#define VERIF1(b, msg, p1) if (!b) { sprintf(error_msg, msg, p1); return false; }
-#define VERIF2(b, msg, p1, p2) if (!b) { sprintf(error_msg, msg, p1, p2); return false; }
+#define VERIF0(b, msg) if (!b) { ESP_LOGE(TAG, msg); goto err; }
+#define VERIF1(b, msg, p1) if (!b) { ESP_LOGE(TAG, msg, p1); goto err; }
+#define VERIF2(b, msg, p1, p2) if (!b) { ESP_LOGE(TAG, msg, p1, p2); goto err; }
 
 // Validate the configuration. Check for the following:
 //
@@ -44,27 +45,49 @@ bool doors_validate_config()
 {
   int i;
   uint64_t all = GPIO_ALL;
+  char * msg = NULL;
+  bool at_least_one_door = false;
 
-  VERIF1((doors_config.version == DOORS_CONFIG_VERSION), "Numéro de version de configuration non valide: %d", doors_config.version)
+  msg = "VERSION CONFIG?";
+  VERIF1((doors_config.version == DOORS_CONFIG_VERSION), "Config version not valid: %d", doors_config.version)
 
   for (i = 0; i < DOOR_COUNT; i++) {
     if (doors_config.doors[i].enabled) {
-      VERIF2(check(doors_config.doors[i].gpio_button_open,  &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Bouton Ouvrir.", doors_config.doors[i].gpio_button_open,  i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_button_close, &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Bouton Fermer.", doors_config.doors[i].gpio_button_close, i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_relay_open,   &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Relais Ouvrir.", doors_config.doors[i].gpio_relay_open,   i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_relay_close,  &all, GPIO_BUTTONS), "GPIO %d déjà en usage ou non valide. Porte %d, Relais Fermer.", doors_config.doors[i].gpio_relay_close,  i + 1)
-      VERIF1((doors_config.doors[i].seq_open[0]  != 255), "Porte %d: Pas de séquence d'ouverture.", i + 1)
-      VERIF1((doors_config.doors[i].seq_close[0] != 255), "Porte %d: Pas de séquence de fermeture.", i + 1)
-      VERIF1((doors_config.doors[i].name[0] == 0), "Porte %d: Nom de la porte absent.", i + 1)
+      at_least_one_door = true;
+      msg = "CONFLIT GPIO!";
+      VERIF2(check(doors_config.doors[i].gpio_button_open,  &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Open Button.",  doors_config.doors[i].gpio_button_open,  i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_button_close, &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Close Button.", doors_config.doors[i].gpio_button_close, i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_relay_open,   &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Open Relay.",   doors_config.doors[i].gpio_relay_open,   i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_relay_close,  &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Close Relay.",  doors_config.doors[i].gpio_relay_close,  i + 1)
+      msg = "SEQ. OUVERTURE!";
+      VERIF1((doors_config.doors[i].seq_open[0]  != 255), "Door %d: No opening sequence.", i + 1)
+      msg = "SEQ. FERMETURE!";
+      VERIF1((doors_config.doors[i].seq_close[0] != 255), "Door %d: No closing sequence.", i + 1)
+      msg = "NOM PORTE!";
+      VERIF1((doors_config.doors[i].name[0] != 0), "Door %d: Name empty.", i + 1)
     }
   }
 
-  VERIF0((doors_config.network.ssid[0] == 0), "SSID Absent.")
-  VERIF0((doors_config.network.pwd[0] == 0),  "Mot de passe WiFi absent.")
+  msg = "AUCUNE PORTE!";
+  VERIF0((at_least_one_door), "No active door.")
 
-  VERIF0((doors_config.pwd[0] != 0), "Le mot de passe d'accès à la configuration est absent.")
+  msg = "CONFIG WIFI!";
+  VERIF0((doors_config.network.ssid[0] != 0), "SSID empty.")
+  VERIF0((doors_config.network.pwd[0] != 0),  "WiFi password empty.")
 
+  msg = "MOT DE PASSE!";
+  VERIF0((doors_config.pwd[0] != 0), "Configuration password empty.")
+
+  msg = "CONFIGURATION!";
+  VERIF0((doors_config.setup == false), "Configuration update required")
   return true;
+
+err:
+  strcpy(message_0,  "ERREUR: ");
+  strcat(message_0,  msg);
+  strcpy(severity_0, "error");
+
+  return false;
 }
 
 static void doors_init_config(struct config_struct * cfg)
@@ -384,6 +407,7 @@ bool doors_get_config()
 
 bool doors_save_config()
 {
+  doors_validate_config();
   if (!doors_save_config_to_file("/spiffs/config.json")) return false;
   if (!doors_save_config_to_file("/spiffs/config_back_1.json")) return false;
   if (!doors_save_config_to_file("/spiffs/config_back_2.json")) return false;
