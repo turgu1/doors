@@ -37,36 +37,36 @@
     <div class="form-body">
       <input type="number" hidden="1" name="DOOR_IDX" id="DOOR_IDX" value="#{DOOR_IDX}"/>
       <div class="form-style">
-        <label for="name">Actif: </label>
+        <label for="ENABLED">Actif: </label>
         <input type="checkbox" name="ENABLED" id="ENABLED" title="En opération ou non" #{ENABLED} value="1"/>
       </div>
       <div class="form-style">
-        <label for="name">Nom: </label>
+        <label for="NAME">Nom: </label>
         <input type="text" maxlength="31" name="NAME" id="NAME" title="Longueur maxi: 31" value="#{NAME}"/>
       </div>
       <div class="form-style">
-        <label for="BOpen">GPIO Bouton Ouvrir: </label>
-        <input class="small" type="number" min="2" max="39" name="BOPEN" id="BOPEN" title="Valeurs possibles: 2, 4, 5, 13 à 39." value="#{BOPEN}"/>
+        <label for="BOPEN">Connecteur Bouton Ouvrir: </label>
+        <input class="small" type="number" min="1" max="10" name="BOPEN" id="BOPEN" title="Numéro de connecteur sur le boîtier, de 1 à 10." value="#{BOPEN}"/>
       </div>
       <div class="form-style">
-        <label for="BClose">GPIO Bouton Fermer: </label>
-        <input class="small" type="number" min="2" max="39" name="BCLOSE" id="BCLOSE" title="Valeurs possibles: 2, 4, 5, 13 à 39." value="#{BCLOSE}"/>
+        <label for="BCLOSE">Connecteur Bouton Fermer: </label>
+        <input class="small" type="number" min="1" max="10" name="BCLOSE" id="BCLOSE" title="Numéro de connecteur sur le boîtier, de 1 à 10." value="#{BCLOSE}"/>
       </div>
       <div class="form-style">
-        <label for="ROpen">GPIO Relais Ouvrir: </label>
-        <input class="small" type="number" min="2" max="33" name="ROPEN"  id="ROPEN" title="Valeurs possibles: 2, 4, 5, 12 à 33." value="#{ROPEN}"/>
+        <label for="ROPEN">Connecteur Relais Ouvrir: </label>
+        <input class="small" type="number" min="1" max="8" name="ROPEN"  id="ROPEN" title="Numéro de connecteur sur le boîtier, de 1 à 8." value="#{ROPEN}"/>
       </div>
       <div class="form-style">
-        <label for="RClose">GPIO Relais Fermer: </label>
-        <input class="small" type="number" min="2" max="33" name="RCLOSE" id="RCLOSE" title="Valeurs possibles: 2, 4, 5, 12 à 33." value="#{RCLOSE}"/>
+        <label for="RCLOSE">Connecteur Relais Fermer: </label>
+        <input class="small" type="number" min="1" max="8" name="RCLOSE" id="RCLOSE" title="Numéro de connecteur sur le boîtier, de 1 à 8." value="#{RCLOSE}"/>
       </div>
       <div class="form-style">
-        <label for="SOpen">Séquence Ouvrir: </label>
-        <input type="text" maxlength="80" name="SOPEN" id="SOPEN" title="Longueur maxi: 19 nombres, valeurs >= 0 et <= 254" value="#{SOPEN}"/>
+        <label for="SOPEN">Séquence Ouvrir: </label>
+        <input type="text" class="large" maxlength="180" name="SOPEN" id="SOPEN" title="Longueur maxi: 19 nombres, valeurs > 0 et <= 65535" value="#{SOPEN}"/>
       </div>
       <div class="form-style">
-        <label for="SClose">Séquence Fermer: </label>
-        <input type="text" maxlength="80" name="SCLOSE" id="SCLOSE" title="Longueur maxi: 19 nombres, valeurs >= 0 et <= 254" value="#{SCLOSE}"/>
+        <label for="SCLOSE">Séquence Fermer: </label>
+        <input type="text" class="large" maxlength="180" name="SCLOSE" id="SCLOSE" title="Longueur maxi: 19 nombres, valeurs > 0 et <= 65535" value="#{SCLOSE}"/>
       </div>
     </div>
     <div class="form-style">

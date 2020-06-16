@@ -35,9 +35,14 @@
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
   <a class="button button2" href="./netcfg">Réseau</a><br/>
   <a class="button button2" href="./seccfg">Sécurité</a><br/>
-  <a class="button button2" href="./doorscfg">Portes</a>
-  <a class="button button2" href="./testgpio">Essais GPIO</a>
+  <a class="button button2" href="./doorscfg">Portes</a><br/>
+  <a class="button button2" href="./variacfg">Varia</a><br/>
+  <a class="button button2" href="./testgpio">Essais GPIO</a><br/>
+  <a class="button button2" onclick="return confirmation()" href="./restart">Redémarrer</a><br/>
   <hr/>
   <a class="button button1" href="./index">Retour</a>
+  <script>
+    function confirmation() { return confirm("Redémarrage - S.v.p. confirmer:"); }
+  </script>
 </body>
 </html>

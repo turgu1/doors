@@ -15,17 +15,18 @@
 #define DOORS_WWW_NET 1
 #include "doors_www_net.h"
 
-//static const char * TAG = "DOORS_WWW_NET";
+static const char * TAG = "DOORS_WWW_NET";
 
 static union {
   uint32_t ip;
   uint8_t  ip_num[4];
 } ip, mask, gw;
 
-static char wifi_ssid[SSID_SIZE];
-static char wifi_pwd[PWD_SIZE];
+static char     wifi_ssid[SSID_SIZE];
+static char     wifi_pwd[PWD_SIZE];
+static uint16_t www_port;
 
-static field_struct net_fields[18] = {
+static field_struct net_fields[19] = {
   { &net_fields[ 1], STR,  "SSID",       wifi_ssid                  },
   { &net_fields[ 2], STR,  "PWD",        wifi_pwd                   },
   { &net_fields[ 3], BYTE, "IP_0",       &ip.ip_num[0]              },
@@ -40,33 +41,37 @@ static field_struct net_fields[18] = {
   { &net_fields[12], BYTE, "GW_1",       &gw.ip_num[1]              },
   { &net_fields[13], BYTE, "GW_2",       &gw.ip_num[2]              },
   { &net_fields[14], BYTE, "GW_3",       &gw.ip_num[3]              },
-  { &net_fields[15], STR,  "MSG_0",      message_0                  },
-  { &net_fields[16], STR,  "MSG_1",      message_1                  },
-  { &net_fields[17], STR,  "SEVERITY_0", severity_0                 },
+  { &net_fields[15], SHORT,"WWW_PORT",   &www_port                  },
+  { &net_fields[16], STR,  "MSG_0",      message_0                  },
+  { &net_fields[17], STR,  "MSG_1",      message_1                  },
+  { &net_fields[18], STR,  "SEVERITY_0", severity_0                 },
   { NULL,            STR,  "SEVERITY_1", severity_1                 }
 };
 
 int net_update(char ** hdr, packet_struct ** pkts)
 {
-  char * field;
+  char * field = NULL;
 
   if (!get_str( "SSID", wifi_ssid, SSID_SIZE) && (field == NULL)) field = "SSID";
   if (!get_str( "PWD",  wifi_pwd,  PWD_SIZE ) && (field == NULL)) field = "Mot de passe";
 
-  if (!get_byte("IP_0",   &ip.ip_num[0]  ) && (field == NULL)) field = "Adr. IP";
-  if (!get_byte("IP_1",   &ip.ip_num[1]  ) && (field == NULL)) field = "Adr. IP";
-  if (!get_byte("IP_2",   &ip.ip_num[2]  ) && (field == NULL)) field = "Adr. IP";
-  if (!get_byte("IP_3",   &ip.ip_num[3]  ) && (field == NULL)) field = "Adr. IP";
-  if (!get_byte("MASK_0", &mask.ip_num[0]) && (field == NULL)) field = "Masque";
-  if (!get_byte("MASK_1", &mask.ip_num[1]) && (field == NULL)) field = "Masque";
-  if (!get_byte("MASK_2", &mask.ip_num[2]) && (field == NULL)) field = "Masque";
-  if (!get_byte("MASK_3", &mask.ip_num[3]) && (field == NULL)) field = "Masque";
-  if (!get_byte("GW_0",   &gw.ip_num[0]  ) && (field == NULL)) field = "Routeur. IP";
-  if (!get_byte("GW_1",   &gw.ip_num[1]  ) && (field == NULL)) field = "Routeur. IP";
-  if (!get_byte("GW_2",   &gw.ip_num[2]  ) && (field == NULL)) field = "Routeur. IP";
-  if (!get_byte("GW_3",   &gw.ip_num[3]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!get_byte ("IP_0",     &ip.ip_num[0]  ) && (field == NULL)) field = "Adr. IP";
+  if (!get_byte ("IP_1",     &ip.ip_num[1]  ) && (field == NULL)) field = "Adr. IP";
+  if (!get_byte ("IP_2",     &ip.ip_num[2]  ) && (field == NULL)) field = "Adr. IP";
+  if (!get_byte ("IP_3",     &ip.ip_num[3]  ) && (field == NULL)) field = "Adr. IP";
+  if (!get_byte ("MASK_0",   &mask.ip_num[0]) && (field == NULL)) field = "Masque";
+  if (!get_byte ("MASK_1",   &mask.ip_num[1]) && (field == NULL)) field = "Masque";
+  if (!get_byte ("MASK_2",   &mask.ip_num[2]) && (field == NULL)) field = "Masque";
+  if (!get_byte ("MASK_3",   &mask.ip_num[3]) && (field == NULL)) field = "Masque";
+  if (!get_byte ("GW_0",     &gw.ip_num[0]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!get_byte ("GW_1",     &gw.ip_num[1]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!get_byte ("GW_2",     &gw.ip_num[2]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!get_byte ("GW_3",     &gw.ip_num[3]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!get_short("WWW_PORT", &www_port      ) && (field == NULL)) field = "Port WWW";
 
   if (field == NULL) {
+    ESP_LOGI(TAG, "Fields OK. Saving modifications.");
+    
     memset(doors_config.network.ssid, 0, SSID_SIZE);
     strcpy(doors_config.network.ssid, wifi_ssid);
 
@@ -81,6 +86,8 @@ int net_update(char ** hdr, packet_struct ** pkts)
     sprintf(doors_config.network.mask, "%u.%u.%u.%u", mask.ip_num[0], mask.ip_num[1], mask.ip_num[2], mask.ip_num[3]);
     sprintf(doors_config.network.gw,   "%u.%u.%u.%u",   gw.ip_num[0],   gw.ip_num[1],   gw.ip_num[2],   gw.ip_num[3]);
 
+    doors_config.network.www_port = www_port;
+
     if (doors_save_config()) {
       strcpy(message_1,  "Mise à jour complétée.");
       strcpy(severity_1, "info");
@@ -91,6 +98,8 @@ int net_update(char ** hdr, packet_struct ** pkts)
     }
   }
   else {
+    ESP_LOGW(TAG, "Some field in error: %s.", field);
+
     strcpy(message_1,  "Champ en erreur: ");
     strcat(message_1,  field);
     strcpy(severity_1, "error");

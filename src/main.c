@@ -10,9 +10,16 @@
 
 static const char * TAG = "MAIN";
 
+void change_main_state(MAIN_STATE new_state)
+{
+  state.main_state = new_state;
+}
+
 bool doors_initializations()
 {
   ESP_LOGI(TAG, "Initializations...");
+
+  state.main_state = RUN;
 
   esp_vfs_spiffs_conf_t conf = {
     .base_path = "/spiffs",
@@ -92,7 +99,7 @@ void app_main(void)
   // for (int i = 500; i >= 0; i--) {
   //   printf(".");
   //   fflush(stdout);
-  //   vTaskDelay(1000 / portTICK_PERIOD_MS);
+  //   vTaskDelay(pdMS_TO_TICKS(1000));
   // }
 
   // printf("\nRestarting now.\n");

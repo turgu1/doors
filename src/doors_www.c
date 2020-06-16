@@ -1,9 +1,11 @@
 #include "doors.h"
 #include "www_support.h"
 #include "doors_config.h"
+#include "doors_control.h"
 #include "doors_www_sec.h"
 #include "doors_www_net.h"
 #include "doors_www_door.h"
+#include "doors_www_varia.h"
 #include "doors_www_testgpio.h"
 #include "secure.h"
 
@@ -114,24 +116,41 @@ static void http_server_netconn_serve(struct netconn *conn)
         ESP_LOGI(TAG, "[ "IPSTR" ] POST %s", IP2STR(&(remote_ip.u_addr.ip4)), path);
       }
 
-      netbuf_delete(inbuf);
+      char * parameters = strstr(buf, "\r\n\r\n");
+      if ((parameters == NULL) || (parameters[4] == 0)) {
+        netbuf_delete(inbuf);
+        err = netconn_recv(conn, &inbuf);
 
-      err = netconn_recv(conn, &inbuf);
+        if ((err == ERR_OK) && (inbuf != NULL)) {
+          netbuf_data(inbuf, (void **) &buf, &buflen);
 
-      if ((err == ERR_OK) && (inbuf != NULL)) {
-        netbuf_data(inbuf, (void **) &buf, &buflen);
+          ESP_LOGI(TAG, "Received the following packet:");
+          fwrite(buf, 1, buflen, stdout);
+          fputc('\n', stdout);
+          fflush(stdout);
 
-        ESP_LOGI(TAG, "Received the following packet:");
-        fwrite(buf, 1, buflen, stdout);
-        fputc('\n', stdout);
-        fflush(stdout);
+          parameters = buf;
+        }
+        else {
+          parameters = NULL;
+        }
+      } 
+      else {
+        parameters += 4;
+      }
 
-        extract_params(buf, false);
+      if (parameters != NULL) {
+        extract_params(parameters, false);
 
-        if      (strcmp(path, "/door_update") == 0) size = door_update(&hdr, &pkts);
-        else if (strcmp(path, "/sec_update" ) == 0) size =  sec_update(&hdr, &pkts);
-        else if (strcmp(path, "/net_update" ) == 0) size =  net_update(&hdr, &pkts);
+        if      (strcmp(path, "/door_update" ) == 0) size =  door_update(&hdr, &pkts);
+        else if (strcmp(path, "/sec_update"  ) == 0) size =   sec_update(&hdr, &pkts);
+        else if (strcmp(path, "/varia_update") == 0) size = varia_update(&hdr, &pkts);
+        else if (strcmp(path, "/net_update"  ) == 0) size =   net_update(&hdr, &pkts);
         else if (strcmp(path, "/testgpio_update" ) == 0) size =  testgpio_update(&hdr, &pkts);
+        else {
+          ESP_LOGE(TAG, "Unknown path: %s.", path);
+          hdr = http_html_hdr_not_found;
+        }
       }
       else {
         ESP_LOGW(TAG, "Received nothing.");
@@ -189,6 +208,9 @@ static void http_server_netconn_serve(struct netconn *conn)
         else if (strcmp("/seccfg", path) == 0) {
           size = sec_edit(&hdr, &pkts);
         }
+        else if (strcmp("/variacfg", path) == 0) {
+          size = varia_edit(&hdr, &pkts);
+        }
         else if (strcmp("/testgpio", path) == 0) {
           size = testgpio_edit(&hdr, &pkts);
         }
@@ -204,6 +226,7 @@ static void http_server_netconn_serve(struct netconn *conn)
               strcat(message_1, doors_config.doors[door_idx].name);
               strcpy(severity_1, "info");
               // open_door(idx)
+              add_relay_command(door_idx, RELAY_OPEN);
             }
             else {
               ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
@@ -227,6 +250,7 @@ static void http_server_netconn_serve(struct netconn *conn)
               strcat(message_1, doors_config.doors[door_idx].name);
               strcpy(severity_1, "info");
               // close_door(idx)
+              add_relay_command(door_idx, RELAY_CLOSE);
             }
             else {
               ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
@@ -278,6 +302,9 @@ static void http_server_netconn_serve(struct netconn *conn)
           hdr = http_xml_hdr;
           pkts = prepare_html("/spiffs/www/browserconfig.xml", NULL, &size);
         }
+        else if (strcmp("/restart", path) == 0) {
+          esp_restart();
+        }
         else {
           ESP_LOGE(TAG, "Unknown path: %s.", path);
           hdr = http_html_hdr_not_found;
@@ -292,7 +319,6 @@ static void http_server_netconn_serve(struct netconn *conn)
     // Send HTTP response header
     if (hdr) {
       send_header(conn, hdr, size);
-      //netconn_write(conn, hdr, strlen(hdr), NETCONN_NOCOPY);
     }
 
     // Send HTML content
@@ -332,7 +358,7 @@ static void http_server(void *pvParameters)
   struct netconn *conn, *newconn;  //conn is listening thread, newconn is new thread for each client
   err_t err;
   conn = netconn_new(NETCONN_TCP);
-  netconn_bind(conn, NULL, 80);
+  netconn_bind(conn, NULL, doors_config.network.www_port);
   netconn_listen(conn);
 
   do {
@@ -351,7 +377,7 @@ void start_http_server()
 {
   ESP_LOGI(TAG, "Web App is running ... ...");
 
-  xTaskCreate(&http_server, "http_server", 2048, NULL, 5, NULL);
+  xTaskCreate(&http_server, "http_server", 4096, NULL, 5, NULL);
 }
 
 void init_http_server()

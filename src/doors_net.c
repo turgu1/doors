@@ -122,7 +122,7 @@ static void sta_event_handler(void            * arg,
   else if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_STA_DISCONNECTED)) {
     if (wifi_first_start) {
       if (s_retry_num < ESP_MAXIMUM_RETRY) {
-        vTaskDelay(10000 / portTICK_PERIOD_MS); // wait 10 sec
+        vTaskDelay(pdMS_TO_TICKS(5000)); // wait 5 sec
         ESP_LOGI(TAG, "retry to connect to the AP");
         esp_wifi_connect();
         s_retry_num++;
@@ -134,7 +134,7 @@ static void sta_event_handler(void            * arg,
     }
     else {
       ESP_LOGI(TAG, "Wifi Disconnected.");
-      vTaskDelay(10000 / portTICK_PERIOD_MS); // wait 10 sec
+      vTaskDelay(pdMS_TO_TICKS(10000)); // wait 10 sec
       ESP_LOGI(TAG, "retry to connect to the AP");
       esp_wifi_connect();
     }
@@ -240,7 +240,7 @@ static bool wifi_init_sta(void)
 bool start_network()
 {
   if (!wifi_init_sta()) {
-    vTaskDelay(10000 / portTICK_PERIOD_MS); // Wait 10 seconds
+    vTaskDelay(pdMS_TO_TICKS(5000)); // Wait 5 seconds
     return wifi_init_ap();
   }
   return true;

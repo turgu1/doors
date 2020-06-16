@@ -42,6 +42,13 @@ static struct {
 } params[15];
 static int param_count;
 
+static char hex(char ch)
+{
+  if ((ch >= '0') && (ch <= '9')) return ch - '0';
+  if ((ch >= 'a') && (ch <= 'f')) return 10 + (ch - 'a');
+  return 10 + (ch - 'A');
+}
+
 // Extract parameters from url string. Parameters are separated from the
 // server location/command selection part of the url with character '?'.
 // Every parameter is separated from each other with character '&'.
@@ -57,12 +64,14 @@ void extract_params(char * str, bool get)
 {
   int idx = 0;
 
+  ESP_LOGI(TAG, "Extracting parameters from: %s.", str);
+
   if (get) while (*str && (*str != '?')) str++;
   if (*str) {
     if (get) *str++ = 0;
     while (*str && (idx < 15)) {
       int len = 0;
-      while (isalpha(*str) && (len < 15)) params[idx].name[len++] = *str++;
+      while ((isalpha(*str) || (*str == '_')) && (len < 15)) params[idx].name[len++] = *str++;
       params[idx].name[len] = 0;
       while (*str && (*str != '&') && (*str != '=')) str++;
       len = 0;
@@ -73,6 +82,13 @@ void extract_params(char * str, bool get)
             params[idx].value[len++] = ' ';
             str++;
           }
+          else if (*str == '%') {
+            str++;
+            char ch = 0;
+            if (*str && (*str != '&')) ch = hex(*str++);
+            if (*str && (*str != '&')) ch = (ch << 4) + hex(*str++);
+            params[idx].value[len++] = ch;
+          }
           else {
             params[idx].value[len++] = *str++;
           }
@@ -80,12 +96,44 @@ void extract_params(char * str, bool get)
         while (*str && (*str != '&')) str++;
       }
       params[idx].value[len] = 0;
+      ESP_LOGI(TAG, "Param %d: %s = %s.", idx, params[idx].name, params[idx].value);
       idx++;
       if (*str == '&') str++;
     } 
   } 
 
   param_count = idx;
+}
+
+bool get_int(char * label, int * val)
+{
+  int idx = 0;
+
+  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  if (idx < param_count) {
+    *val = atoi(params[idx].value);
+    return true;
+  }
+  return false;
+}
+
+bool get_short(char * label, uint16_t * val)
+{
+  int idx = 0;
+  int v;
+
+  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  if (idx < param_count) {
+    v = atoi(params[idx].value);
+    if ((v >= 0) && (v <= 65535)) {
+      *val = v;
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  return false;
 }
 
 bool get_byte(char * label, uint8_t * val)
@@ -118,9 +166,6 @@ bool get_bool(char * label, bool * val)
     if ((v == 0) || (v == 1)) {
       *val = (v == 1);
       return true;
-    }
-    else {
-      return false;
     }
   }
 
@@ -226,7 +271,7 @@ static void free_packets()
 
 packet_struct * prepare_html(char * filename, field_struct * fields, int * size)
 {
-  ESP_LOGI(TAG, "Preparing page %s.", filename);
+  ESP_LOGD(TAG, "Preparing page %s.", filename);
 
   file= fopen(filename, "r");
  
@@ -285,11 +330,17 @@ packet_struct * prepare_html(char * filename, field_struct * fields, int * size)
             case INT:
               put_int(* (int *) field->value);
               break;
+            case SHORT:
+              put_int(* (uint16_t *) field->value);
+              break;
             case BYTE:
               put_int(* (uint8_t *) field->value);
               break;
             case BOOL:
-              put_int(* (bool *) field->value);
+              if (* (bool *) field->value) {
+                str = "checked";
+                while (*str) put_char(*str++);
+              }
               break;
             case STR:
               str = (char *) field->value;

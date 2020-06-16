@@ -29,33 +29,21 @@
   <meta name="msapplication-config" content="./browserconfig.xml" />
 </head>
 <body>
-  <h1>Essais GPIO</h1>
+  <h1>Config: Varia</h1>
   <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
   <hr/>
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
-  <form action="./testgpio_update" method="post" class="form-style">
+  <form action="./varia_update" method="post" class="form-style">
     <div class="form-style">
-      <label for="GPIO">GPIO: </label>
-      <input type="number" min="2" max="33" class="small" name="GPIO" id="GPIO" required title="2 <= GPIO <= 33" value="#{GPIO}">
+      <label for="RALEN">Durée arrêt relais (ms): </label>
+      <input class="small" type="number" min="1" max="65535" name="RALEN" id="RALEN" title="Valeur entre 1 et 65535." value="#{RALEN}"/>
     </div>
     <div class="form-style">
-      <label for="ACTIVELOW">Active Low: </label>
-      <input type="checkbox" name="ACTIVELOW" id="ACTIVELOW" title="Longueur maxi: 15" #{ACTIVELOW} value="1">
-    </div>
-    <div class="form-style">
-      <label for="DURATION">Durée (ms): </label>
-      <input type="number" class="small" name="DURATION" id="DURATION" required value="#{DURATION}">
-    </div>
-    <div class="form-style">
-      <input type="submit" value="GO!" class="submit button button2">
+      <input type="submit" value="OK" class="submit button button2">
     </div>
   </form>
 
   <hr/>
-  <a class="button button3" #{ONCLICK} href="#{RETURNURL}">#{RETURNLABEL}</a>
-
-  <script>
-    function confirmation() { return confirm("Redémarrage - S.v.p. confirmer:"); }
-  </script>
+  <a class="button button3" href="./config">Annuler</a>
 </body>
 </html>

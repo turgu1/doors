@@ -42,7 +42,5 @@
 #define DEFAULT_GW   "192.168.1.1"
 #define DEFAULT_MASK "255.255.255.0"
 
-PUBLIC char error_msg[256];
-
 #undef PUBLIC
 #endif

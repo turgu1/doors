@@ -27,7 +27,7 @@ field_struct sec_fields[7] = {
 
 int sec_update(char ** hdr, packet_struct ** pkts)
 {
-  char * field;
+  char * field = NULL;
 
   if (!get_str("OLD",   old_pwd,   PWD_SIZE)) field = "Ancien m.de.p.";
   else {
@@ -38,6 +38,8 @@ int sec_update(char ** hdr, packet_struct ** pkts)
   if ((!get_str("VERIF", verif_pwd, PWD_SIZE) || (strcmp(new_pwd, verif_pwd) != 0)) && (field == NULL)) field = "Vérif. m.de.p.";
 
   if (field == NULL) {
+    ESP_LOGI(TAG, "Fields OK. Saving modifications.");
+    
     memset(doors_config.pwd, 0, PWD_SIZE);
     strcpy(doors_config.pwd, new_pwd);
 
@@ -51,6 +53,8 @@ int sec_update(char ** hdr, packet_struct ** pkts)
     }
   }
   else {
+    ESP_LOGW(TAG, "Some field in error: %s.", field);
+
     strcpy(message_1,  "Champ en erreur: ");
     strcat(message_1,  field);
     strcpy(severity_1, "error");

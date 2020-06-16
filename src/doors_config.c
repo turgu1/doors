@@ -43,10 +43,10 @@ static bool check(uint8_t gpio, uint64_t * all, uint64_t gpios)
 
 bool doors_validate_config()
 {
-  int i;
-  uint64_t all = GPIO_ALL;
-  char * msg = NULL;
-  bool at_least_one_door = false;
+  int       i;
+  uint64_t  all = GPIO_ALL;
+  char    * msg = NULL;
+  bool      at_least_one_door = false;
 
   msg = "VERSION CONFIG?";
   VERIF1((doors_config.version == DOORS_CONFIG_VERSION), "Config version not valid: %d", doors_config.version)
@@ -57,14 +57,23 @@ bool doors_validate_config()
       msg = "CONFLIT GPIO!";
       VERIF2(check(doors_config.doors[i].gpio_button_open,  &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Open Button.",  doors_config.doors[i].gpio_button_open,  i + 1)
       VERIF2(check(doors_config.doors[i].gpio_button_close, &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Close Button.", doors_config.doors[i].gpio_button_close, i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_relay_open,   &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Open Relay.",   doors_config.doors[i].gpio_relay_open,   i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_relay_close,  &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Close Relay.",  doors_config.doors[i].gpio_relay_close,  i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_relay_open,   &all, GPIO_RELAYS ), "GPIO %d already in use or not valid. Door %d, Open Relay.",   doors_config.doors[i].gpio_relay_open,   i + 1)
       msg = "SEQ. OUVERTURE!";
-      VERIF1((doors_config.doors[i].seq_open[0]  != 255), "Door %d: No opening sequence.", i + 1)
+      VERIF1((doors_config.doors[i].seq_open[0]  != 0), "Door %d: No opening sequence.", i + 1)
       msg = "SEQ. FERMETURE!";
-      VERIF1((doors_config.doors[i].seq_close[0] != 255), "Door %d: No closing sequence.", i + 1)
+      VERIF1((doors_config.doors[i].seq_close[0] != 0), "Door %d: No closing sequence.", i + 1)
       msg = "NOM PORTE!";
       VERIF1((doors_config.doors[i].name[0] != 0), "Door %d: Name empty.", i + 1)
+    }
+  }
+
+  all = GPIO_ALL;
+  for (i = 0; i < DOOR_COUNT; i++) {
+    if (doors_config.doors[i].enabled) {
+      msg = "CONFLIT GPIO!";
+      VERIF2(check(doors_config.doors[i].gpio_button_open,  &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Open Button.",  doors_config.doors[i].gpio_button_open,  i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_button_close, &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Close Button.", doors_config.doors[i].gpio_button_close, i + 1)
+      VERIF2(check(doors_config.doors[i].gpio_relay_close,  &all, GPIO_RELAYS ), "GPIO %d already in use or not valid. Door %d, Close Relay.",  doors_config.doors[i].gpio_relay_close,  i + 1)
     }
   }
 
@@ -110,6 +119,8 @@ static void doors_init_config(struct config_struct * cfg)
   strcpy(cfg->network.mask,   "255.255.255.0");
   strcpy(cfg->network.gw,     "0.0.0.0");
 
+  cfg->network.www_port = 80;
+
   // Doors
 
   for (int i = 0; i < DOOR_COUNT; i++) {
@@ -117,13 +128,13 @@ static void doors_init_config(struct config_struct * cfg)
     strcpy(cfg->doors[i].name, "Porte ");
     cfg->doors[i].name[6]           = '1' + i;
     cfg->doors[i].name[7]           = 0;
-    cfg->doors[i].gpio_button_open  = 2;
-    cfg->doors[i].gpio_button_close = 2;
-    cfg->doors[i].gpio_relay_open   = 2;
-    cfg->doors[i].gpio_relay_close  = 2;
-    cfg->doors[i].seq_open[0]       = 255;
-    cfg->doors[i].seq_close[0]      = 255;
+    cfg->doors[i].conn_buttons      = i;
+    cfg->doors[i].conn_relays       = i;
+    cfg->doors[i].seq_open[0]       = 0;
+    cfg->doors[i].seq_close[0]      = 0;
   }
+
+  cfg->relay_abort_length = 250; // ms
 }
 
 // Retrieve configuration from SPIFFS config.json file.
@@ -172,21 +183,22 @@ static void doors_init_config(struct config_struct * cfg)
   if (!cJSON_IsObject(item)) { ESP_LOGE(TAG, "Item [%d] not a valid object.", index); goto fin; } \
   var = item;
 
-bool parse_seq(uint8_t * seq, char * str, int max_size)
+bool parse_seq(seq_t * seq, char * str, int max_size)
 {
   char *save = str;
   while (*str == ' ') str++;
   while (*str && (max_size > 0)) {
     *seq = 0;
     while (isdigit(*str)) { *seq = (*seq * 10) + (*str - '0'); str++; }
+    seq++;
+    max_size--;
+
     while (*str == ' ') str++;
     if (*str != ',') break;
     str++;
     while (*str == ' ') str++;
-    max_size--;
-    seq++;
   }
-  if (max_size > 0) *seq = 255;
+  if (max_size > 0) *seq = 0;
   if (*str != 0) ESP_LOGE(TAG, "Sequence not valid: [%s]", save);
   return *str == 0;
 }
@@ -194,7 +206,7 @@ bool parse_seq(uint8_t * seq, char * str, int max_size)
 static bool doors_get_config_from_file(char * filename)
 {
   int i;
-  char * tmp = malloc(121);
+  char * tmp = malloc(181);
 
   FILE *f = fopen(filename, "r");
 
@@ -235,25 +247,26 @@ static bool doors_get_config_from_file(char * filename)
     GET_STR(root,  doors_config.pwd,   "pwd", PWD_SIZE - 1);
     GET_BOOL(root, doors_config.setup, "setup");
     
+    GET_VAL (root, doors_config.relay_abort_length,  "relay_abort_length" );
+    
     GET_OBJECT(root, net, "network");
-    GET_STR(net, doors_config.network.ssid, "ssid", SSID_SIZE - 1);
-    GET_STR(net, doors_config.network.pwd,  "pwd",  PWD_SIZE  - 1);
-    GET_STR(net, doors_config.network.ip,   "ip",   IP_SIZE   - 1);
-    GET_STR(net, doors_config.network.mask, "mask", IP_SIZE   - 1);
-    GET_STR(net, doors_config.network.gw,   "gw",   IP_SIZE   - 1);
+    GET_STR(net, doors_config.network.ssid,     "ssid", SSID_SIZE - 1);
+    GET_STR(net, doors_config.network.pwd,      "pwd",  PWD_SIZE  - 1);
+    GET_STR(net, doors_config.network.ip,       "ip",   IP_SIZE   - 1);
+    GET_STR(net, doors_config.network.mask,     "mask", IP_SIZE   - 1);
+    GET_STR(net, doors_config.network.gw,       "gw",   IP_SIZE   - 1);
+    GET_VAL(net, doors_config.network.www_port, "port");
 
     GET_ARRAY(root, doors, "doors", DOOR_COUNT);
     for (i = 0; i < DOOR_COUNT; i++) {
       GET_OBJECT_ITEM(doors, door, "door", i);
-      GET_BOOL(door, doors_config.doors[i].enabled,          "enabled");
-      GET_STR(door, doors_config.doors[i].name,              "name", NAME_SIZE - 1);
-      GET_VAL(door, doors_config.doors[i].gpio_button_open,  "gpio_button_open");
-      GET_VAL(door, doors_config.doors[i].gpio_button_close, "gpio_button_close");
-      GET_VAL(door, doors_config.doors[i].gpio_relay_open,   "gpio_relay_open");
-      GET_VAL(door, doors_config.doors[i].gpio_relay_close,  "gpio_relay_close");
-      GET_STR(door, tmp, "seq_open",  120);
+      GET_BOOL(door, doors_config.doors[i].enabled,     "enabled"            );
+      GET_STR(door, doors_config.doors[i].name,         "name", NAME_SIZE - 1);
+      GET_VAL(door, doors_config.doors[i].conn_buttons, "conn_buttons"       );
+      GET_VAL(door, doors_config.doors[i].conn_relays,  "conn_relays"        );
+      GET_STR(door, tmp, "seq_open",  180);
       if (!parse_seq(doors_config.doors[i].seq_open, tmp, SEQ_SIZE)) goto fin;
-      GET_STR(door, tmp, "seq_close", 120);
+      GET_STR(door, tmp, "seq_close", 180);
       if (!parse_seq(doors_config.doors[i].seq_close, tmp, SEQ_SIZE)) goto fin;
     }
 
@@ -261,7 +274,6 @@ static bool doors_get_config_from_file(char * filename)
 fin:
     cJSON_Delete(root);
     free(buff);
-    free(tmp);
 
     uint32_t crc32 = crc32_le(0, (uint8_t const *) &doors_config, sizeof(doors_config) - 4);
     ESP_LOGI(TAG, "Retrieved config: computed CRC: %u.", crc32);
@@ -276,15 +288,16 @@ fin:
     }
   }
 
+  free(tmp);
   return true;
 }
 
-void seq_to_str(uint8_t * seq, char * str, int max_size)
+void seq_to_str(seq_t * seq, char * str, int max_size)
 {
   int cnt = SEQ_SIZE;
   bool first = true;
 
-  while ((cnt > 0) && (max_size > 0) && (*seq != 255)) {
+  while ((cnt > 0) && (max_size > 0) && (*seq != 0)) {
     if (!first) { *str++ = ','; if (--max_size <= 0) break; }
     first = false;
     
@@ -310,7 +323,7 @@ void seq_to_str(uint8_t * seq, char * str, int max_size)
 static bool doors_save_config_to_file(char * filename)
 {
   int i;
-  char * tmp = (char *) malloc(121);
+  char * tmp = (char *) malloc(181);
 
   doors_config.crc32 = crc32_le(0, (uint8_t const *) &doors_config, sizeof(doors_config) - 4);
   ESP_LOGI(TAG, "Saved config computed CRC: %u.", doors_config.crc32);
@@ -318,16 +331,20 @@ static bool doors_save_config_to_file(char * filename)
   cJSON * root = cJSON_CreateObject();
   cJSON * net, * doors, * door;
   
-  cJSON_AddNumberToObject(root, "version", doors_config.version);
-  cJSON_AddStringToObject(root, "pwd",     doors_config.pwd);
-  cJSON_AddBoolToObject  (root, "setup",   doors_config.setup);
+  cJSON_AddNumberToObject(root, "version",             doors_config.version);
+  cJSON_AddStringToObject(root, "pwd",                 doors_config.pwd    );
+  cJSON_AddBoolToObject  (root, "setup",               doors_config.setup  );
+
+  cJSON_AddNumberToObject(root, "relay_abort_length",  doors_config.relay_abort_length );
+  
     
-  cJSON_AddItemToObject  (root, "network", net = cJSON_CreateObject());
-  cJSON_AddStringToObject(net,  "ssid",    doors_config.network.ssid);
-  cJSON_AddStringToObject(net,  "pwd",     doors_config.network.pwd);
-  cJSON_AddStringToObject(net,  "ip",      doors_config.network.ip);
-  cJSON_AddStringToObject(net,  "mask",    doors_config.network.mask);
-  cJSON_AddStringToObject(net,  "gw",      doors_config.network.gw);
+  cJSON_AddItemToObject  (root, "network", net = cJSON_CreateObject()   );
+  cJSON_AddStringToObject(net,  "ssid",    doors_config.network.ssid    );
+  cJSON_AddStringToObject(net,  "pwd",     doors_config.network.pwd     );
+  cJSON_AddStringToObject(net,  "ip",      doors_config.network.ip      );
+  cJSON_AddStringToObject(net,  "mask",    doors_config.network.mask    );
+  cJSON_AddStringToObject(net,  "gw",      doors_config.network.gw      );
+  cJSON_AddNumberToObject(net,  "port",    doors_config.network.www_port);
 
   cJSON_AddItemToObject(root, "doors", doors = cJSON_CreateArray());
 
@@ -337,15 +354,13 @@ static bool doors_save_config_to_file(char * filename)
     cJSON_AddBoolToObject  (door, "enabled", doors_config.doors[i].enabled);
     cJSON_AddStringToObject(door, "name",    doors_config.doors[i].name   );
     
-    cJSON_AddNumberToObject(door, "gpio_button_open",  doors_config.doors[i].gpio_button_open );
-    cJSON_AddNumberToObject(door, "gpio_button_close", doors_config.doors[i].gpio_button_close);
-    cJSON_AddNumberToObject(door, "gpio_relay_open",   doors_config.doors[i].gpio_relay_open  );
-    cJSON_AddNumberToObject(door, "gpio_relay_close",  doors_config.doors[i].gpio_relay_close );
+    cJSON_AddNumberToObject(door, "conn_buttons",  doors_config.doors[i].conn_buttons );
+    cJSON_AddNumberToObject(door, "conn_relays",   doors_config.doors[i].conn_relays  );
     
-    seq_to_str(doors_config.doors[i].seq_open, tmp, 120);
+    seq_to_str(doors_config.doors[i].seq_open, tmp, 180);
     cJSON_AddStringToObject(door, "seq_open", tmp);
 
-    seq_to_str(doors_config.doors[i].seq_close, tmp, 120);
+    seq_to_str(doors_config.doors[i].seq_close, tmp, 180);
     cJSON_AddStringToObject(door, "seq_close", tmp);
   }
 
@@ -366,7 +381,6 @@ static bool doors_save_config_to_file(char * filename)
 
     printf(str);
 
-    free(tmp);
     free(str);
     cJSON_Delete(root);
 
@@ -380,6 +394,7 @@ static bool doors_save_config_to_file(char * filename)
     }
   }
 
+  free(tmp);
   return completed;
 }
 
