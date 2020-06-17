@@ -10,18 +10,16 @@
 
 static const char * TAG = "DOORS_CONFIG";
 
-static const uint64_t GPIO_BUTTONS  = 0x0000009FFEEFE034LL; // 2, 4, 5, 13 .. 19, 21 .. 23, 25 .. 36, 39
-static const uint64_t GPIO_RELAYS   = 0x00000003FEEFF034LL; // 2, 4, 5, 12 .. 19, 21 .. 23, 25 .. 33
-
-static const uint64_t GPIO_ALL = (GPIO_BUTTONS | GPIO_RELAYS);
+#define BUTTON_CONNECTIONS 0x1F
+#define RELAY_CONNECTIONS  0xFF
 
 // Check if the gpio is valid and not already in used. The *all* mask is updated to reflect
 // that the gpio is in use.
-static bool check(uint8_t gpio, uint64_t * all, uint64_t gpios)
+static bool check(uint8_t connection, uint8_t * all, uint8_t connections)
 {
-  uint64_t mask = 1 << gpio;
+  uint8_t mask = 1 << connection;
 
-  if (((mask & gpios) == 0) || ((mask & *all) == 0)) return false;
+  if (((mask & connections) == 0) || ((mask & *all) == 0)) return false;
   *all = *all & ~mask;
   return true;
 }
@@ -44,20 +42,27 @@ static bool check(uint8_t gpio, uint64_t * all, uint64_t gpios)
 bool doors_validate_config()
 {
   int       i;
-  uint64_t  all = GPIO_ALL;
+  uint8_t  all_buttons = BUTTON_CONNECTIONS;
+  uint8_t  all_relays  = RELAY_CONNECTIONS;
   char    * msg = NULL;
   bool      at_least_one_door = false;
 
   msg = "VERSION CONFIG?";
-  VERIF1((doors_config.version == DOORS_CONFIG_VERSION), "Config version not valid: %d", doors_config.version)
+  VERIF1((doors_config.version == DOORS_CONFIG_VERSION), 
+         "Config version not valid: %d", 
+         doors_config.version)
 
   for (i = 0; i < DOOR_COUNT; i++) {
     if (doors_config.doors[i].enabled) {
       at_least_one_door = true;
-      msg = "CONFLIT GPIO!";
-      VERIF2(check(doors_config.doors[i].gpio_button_open,  &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Open Button.",  doors_config.doors[i].gpio_button_open,  i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_button_close, &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Close Button.", doors_config.doors[i].gpio_button_close, i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_relay_open,   &all, GPIO_RELAYS ), "GPIO %d already in use or not valid. Door %d, Open Relay.",   doors_config.doors[i].gpio_relay_open,   i + 1)
+      msg = "CONFLIT CONN. BOUTONS!";
+      VERIF2(check(doors_config.doors[i].conn_buttons,  &all_buttons, BUTTON_CONNECTIONS), 
+             "Button Connection %d already in use or not valid. Door %d, Open Button.",  
+             doors_config.doors[i].conn_buttons,  i + 1)
+      msg = "CONFLIT CONN. RELAIS!";
+      VERIF2(check(doors_config.doors[i].conn_relays,   &all_relays, RELAY_CONNECTIONS ), 
+             "Relay Connection %d already in use or not valid. Door %d, Open Relay.",
+             doors_config.doors[i].conn_relays,   i + 1)
       msg = "SEQ. OUVERTURE!";
       VERIF1((doors_config.doors[i].seq_open[0]  != 0), "Door %d: No opening sequence.", i + 1)
       msg = "SEQ. FERMETURE!";
@@ -67,17 +72,7 @@ bool doors_validate_config()
     }
   }
 
-  all = GPIO_ALL;
-  for (i = 0; i < DOOR_COUNT; i++) {
-    if (doors_config.doors[i].enabled) {
-      msg = "CONFLIT GPIO!";
-      VERIF2(check(doors_config.doors[i].gpio_button_open,  &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Open Button.",  doors_config.doors[i].gpio_button_open,  i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_button_close, &all, GPIO_BUTTONS), "GPIO %d already in use or not valid. Door %d, Close Button.", doors_config.doors[i].gpio_button_close, i + 1)
-      VERIF2(check(doors_config.doors[i].gpio_relay_close,  &all, GPIO_RELAYS ), "GPIO %d already in use or not valid. Door %d, Close Relay.",  doors_config.doors[i].gpio_relay_close,  i + 1)
-    }
-  }
-
-  msg = "AUCUNE PORTE!";
+  msg = "AUCUNE PORTE ACTIVE!";
   VERIF0((at_least_one_door), "No active door.")
 
   msg = "CONFIG WIFI!";
@@ -117,7 +112,7 @@ static void doors_init_config(struct config_struct * cfg)
 
   strcpy(cfg->network.ip,     "");
   strcpy(cfg->network.mask,   "255.255.255.0");
-  strcpy(cfg->network.gw,     "0.0.0.0");
+  strcpy(cfg->network.gw,     "192.168.1.1");
 
   cfg->network.www_port = 80;
 
@@ -130,8 +125,8 @@ static void doors_init_config(struct config_struct * cfg)
     cfg->doors[i].name[7]           = 0;
     cfg->doors[i].conn_buttons      = i;
     cfg->doors[i].conn_relays       = i;
-    cfg->doors[i].seq_open[0]       = 0;
-    cfg->doors[i].seq_close[0]      = 0;
+    cfg->doors[i].seq_open[0]       = 400;
+    cfg->doors[i].seq_close[0]      = 400;
   }
 
   cfg->relay_abort_length = 250; // ms

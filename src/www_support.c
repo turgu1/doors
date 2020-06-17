@@ -71,7 +71,7 @@ void extract_params(char * str, bool get)
     if (get) *str++ = 0;
     while (*str && (idx < 15)) {
       int len = 0;
-      while ((isalpha(*str) || (*str == '_')) && (len < 15)) params[idx].name[len++] = *str++;
+      while ((isalnum(*str) || (*str == '_')) && (len < 15)) params[idx].name[len++] = *str++;
       params[idx].name[len] = 0;
       while (*str && (*str != '&') && (*str != '=')) str++;
       len = 0;
@@ -271,9 +271,9 @@ static void free_packets()
 
 packet_struct * prepare_html(char * filename, field_struct * fields, int * size)
 {
-  ESP_LOGD(TAG, "Preparing page %s.", filename);
+  ESP_LOGI(TAG, "Preparing page %s.", filename);
 
-  file= fopen(filename, "r");
+  file = fopen(filename, "r");
  
   if (file == NULL) {
     ESP_LOGE(TAG, "File %s does not exists.", filename);

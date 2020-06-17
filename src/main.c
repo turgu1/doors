@@ -4,6 +4,7 @@
 #include "doors_config.h"
 #include "doors_net.h"
 #include "doors_www.h"
+#include "doors_control.h"
 
 #define GLOBAL 1
 #include "doors_global.h"
@@ -57,9 +58,10 @@ bool doors_initializations()
 
 	ESP_ERROR_CHECK(nvs_flash_init());
 
-  init_http_server();
-  
   doors_get_config();
+
+  init_http_server();
+  init_doors_control();
 
   return true;
 }
@@ -95,6 +97,8 @@ void app_main(void)
     ESP_LOGE(TAG, "Unable to start network. Software issue...");
   }
  
+  start_doors_control();
+
   // printf("Restarting in 500 seconds ");
   // for (int i = 500; i >= 0; i--) {
   //   printf(".");

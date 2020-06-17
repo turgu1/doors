@@ -121,6 +121,8 @@ int net_edit(char ** hdr, packet_struct ** pkts)
   inet_pton(AF_INET, doors_config.network.ip,   &ip.ip);
   inet_pton(AF_INET, doors_config.network.gw,   &gw.ip);
   inet_pton(AF_INET, doors_config.network.mask, &mask.ip);
+  
+  www_port = doors_config.network.www_port;
 
   int size;
 

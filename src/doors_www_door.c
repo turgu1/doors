@@ -18,18 +18,18 @@ static seq_t   seq_open[SEQ_SIZE], seq_close[SEQ_SIZE];
 static char    name[NAME_SIZE];
 static bool    enabled = false;
 
-static field_struct door_fields[14] = {
+static field_struct door_fields[12] = {
   { &door_fields[ 1], BOOL, "ENABLED",    &enabled     },
   { &door_fields[ 2], STR,  "NAME",       name         },
   { &door_fields[ 3], BYTE, "CBUTTON",   &conn_buttons },
-  { &door_fields[ 6], BYTE, "CRELAY",    &conn_relays  },
-  { &door_fields[ 7], STR,  "SOPEN",      seq_open_str },
-  { &door_fields[ 8], STR,  "SCLOSE",     seq_close_str},
-  { &door_fields[ 9], INT,  "DOOR_NBR",  &door_nbr     },
-  { &door_fields[10], INT,  "DOOR_IDX",  &door_idx     },
-  { &door_fields[11], STR,  "MSG_0",      message_0    },
-  { &door_fields[12], STR,  "MSG_1",      message_1    },
-  { &door_fields[13], STR,  "SEVERITY_0", severity_0   },
+  { &door_fields[ 4], BYTE, "CRELAY",    &conn_relays  },
+  { &door_fields[ 5], STR,  "SOPEN",      seq_open_str },
+  { &door_fields[ 6], STR,  "SCLOSE",     seq_close_str},
+  { &door_fields[ 7], INT,  "DOOR_NBR",  &door_nbr     },
+  { &door_fields[ 8], INT,  "DOOR_IDX",  &door_idx     },
+  { &door_fields[ 9], STR,  "MSG_0",      message_0    },
+  { &door_fields[10], STR,  "MSG_1",      message_1    },
+  { &door_fields[11], STR,  "SEVERITY_0", severity_0   },
   { NULL,             STR,  "SEVERITY_1", severity_1   }
 };
 
@@ -66,8 +66,8 @@ int door_update(char ** hdr, packet_struct ** pkts)
     strcpy(doors_config.doors[door_idx].name, name);
     
     doors_config.doors[door_idx].enabled      = enabled;
-    doors_config.doors[door_idx].conn_buttons = conn_buttons;
-    doors_config.doors[door_idx].conn_relays  = conn_relays;
+    doors_config.doors[door_idx].conn_buttons = conn_buttons - 1;
+    doors_config.doors[door_idx].conn_relays  = conn_relays - 1;
 
     memcpy(doors_config.doors[door_idx].seq_open,  seq_open,  SEQ_SIZE * sizeof(seq_t));
     memcpy(doors_config.doors[door_idx].seq_close, seq_close, SEQ_SIZE * sizeof(seq_t));
@@ -115,8 +115,8 @@ int door_edit(char ** hdr, packet_struct ** pkts)
       strcpy(name, doors_config.doors[door_idx].name);
 
       enabled      = doors_config.doors[door_idx].enabled;
-      conn_buttons = doors_config.doors[door_idx].conn_buttons;
-      conn_relays  = doors_config.doors[door_idx].conn_relays;
+      conn_buttons = doors_config.doors[door_idx].conn_buttons + 1;
+      conn_relays  = doors_config.doors[door_idx].conn_relays + 1;
 
       *hdr  = http_html_hdr;
       *pkts = prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              

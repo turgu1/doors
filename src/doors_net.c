@@ -155,7 +155,7 @@ static bool wifi_init_sta(void)
 
   tcpip_adapter_init();
 
-  if (doors_config.network.ip[0] != '\0') {
+  if ((doors_config.network.ip[0] != '\0') && (strcmp(doors_config.network.ip, "0.0.0.0") != 0)) {
     tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA); // Don't run a DHCP client
 
     //Set static IP

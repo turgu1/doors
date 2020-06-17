@@ -33,12 +33,14 @@
   <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
   <hr/>
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
-  <a class="button button2" href="./netcfg">Réseau</a><br/>
-  <a class="button button2" href="./seccfg">Sécurité</a><br/>
-  <a class="button button2" href="./doorscfg">Portes</a><br/>
-  <a class="button button2" href="./variacfg">Varia</a><br/>
-  <a class="button button2" href="./testgpio">Essais GPIO</a><br/>
-  <a class="button button2" onclick="return confirmation()" href="./restart">Redémarrer</a><br/>
+  <div class="form-body">
+    <div class="form-style"><a class="button button2 align" href="./netcfg">Réseau</a></div>
+    <div class="form-style"><a class="button button2 align" href="./seccfg">Sécurité</a></div>
+    <div class="form-style"><a class="button button2 align" href="./doorscfg">Portes</a></div>
+    <div class="form-style"><a class="button button2 align" href="./variacfg">Varia</a></div>
+    <div class="form-style"><a class="button button2 align" href="./testgpio">Essais GPIO</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="return confirmation()" href="./restart">Redémarrer</a></div>
+  </div>
   <hr/>
   <a class="button button1" href="./index">Retour</a>
   <script>
