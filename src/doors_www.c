@@ -222,11 +222,18 @@ static void http_server_netconn_serve(struct netconn *conn)
           if (get_byte("door", &door_idx)) {
             ESP_LOGI(TAG, "Open door %d.", door_idx);
             if (door_idx < DOOR_COUNT) {
-              strcpy(message_1, "Ouverture de ");
-              strcat(message_1, doors_config.doors[door_idx].name);
-              strcpy(severity_1, "info");
-              // open_door(idx)
-              add_relay_command(door_idx, RELAY_OPEN);
+              if (doors_config.doors[door_idx].enabled) {
+                strcpy(message_1, "Ouverture de ");
+                strcat(message_1, doors_config.doors[door_idx].name);
+                strcpy(severity_1, "info");
+                add_relay_command(door_idx, RELAY_OPEN);
+              }
+              else {
+                strcpy(message_1, "Porte [");
+                strcat(message_1, doors_config.doors[door_idx].name);
+                strcat(message_1, "] pas activée!");
+                strcpy(severity_1, "warning");
+              }
             }
             else {
               ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
@@ -246,11 +253,18 @@ static void http_server_netconn_serve(struct netconn *conn)
           if (get_byte("door", &door_idx)) {
             ESP_LOGI(TAG, "Close door %d.", door_idx);
             if (door_idx < DOOR_COUNT) {
-              strcpy(message_1, "Fermeture de ");
-              strcat(message_1, doors_config.doors[door_idx].name);
-              strcpy(severity_1, "info");
-              // close_door(idx)
-              add_relay_command(door_idx, RELAY_CLOSE);
+              if (doors_config.doors[door_idx].enabled) {
+                strcpy(message_1, "Fermeture de ");
+                strcat(message_1, doors_config.doors[door_idx].name);
+                strcpy(severity_1, "info");
+                add_relay_command(door_idx, RELAY_CLOSE);
+              }
+              else {
+                strcpy(message_1, "Porte [");
+                strcat(message_1, doors_config.doors[door_idx].name);
+                strcat(message_1, "] pas activée!");
+                strcpy(severity_1, "warning");
+              }
             }
             else {
               ESP_LOGE(TAG, "Door number not valid: %d", door_idx);

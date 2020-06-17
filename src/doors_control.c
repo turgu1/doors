@@ -88,6 +88,9 @@ static void relays_control_process(void * not_used)
     TickType_t waitTime = pdMS_TO_TICKS(10000);
 
     if (xQueueReceive(relays_control_queue, &data, waitTime) == pdTRUE) {
+
+      ESP_LOGI(TAG, "SENDING TO RELAY CONNECTOR %d, %s, %d.", data & 0x07, (data & 0x80) ? "CLOSE" : "OPEN", (data & 0x40) ? 1 : 0);
+
       new_relay_close_values = relay_close_values;
       new_relay_open_values = relay_open_values;
 
@@ -109,6 +112,9 @@ static void relays_control_process(void * not_used)
       }
       while (uxQueueMessagesWaiting(relays_control_queue) > 0) {
         xQueueReceive(relays_control_queue, &data, 0);
+      
+        ESP_LOGI(TAG, "SENDING TO RELAY CONNECTOR %d, %s, %d.", data & 0x07, (data & 0x80) ? "CLOSE" : "OPEN", (data & 0x40) ? 1 : 0);
+      
         if (data & 0x80) {    // RELAY_CLOSE ?
           if (data & 0x40) {  // level = 1 ?
             new_relay_close_values |= (1 << (data & 0x07));

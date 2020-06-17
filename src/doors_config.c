@@ -374,8 +374,6 @@ static bool doors_save_config_to_file(char * filename)
 
     completed = fwrite(str, 1, size, f) == size;
 
-    printf(str);
-
     free(str);
     cJSON_Delete(root);
 
