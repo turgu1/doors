@@ -20,7 +20,7 @@ static char    onclick[40];
 static char    return_url[12];
 static char    return_label[12];
 
-static field_struct testgpio_fields[10] = {
+static www_field_struct testgpio_fields[10] = {
   { &testgpio_fields[1], BYTE, "GPIO",       &gpio         },
   { &testgpio_fields[2], BOOL, "ACTIVELOW",  &active_low   },
   { &testgpio_fields[3], INT,  "DURATION",   &duration     },
@@ -33,13 +33,13 @@ static field_struct testgpio_fields[10] = {
   { NULL,                STR,  "SEVERITY_1",  severity_1   }
 };
 
-int testgpio_update(char ** hdr, packet_struct ** pkts)
+int testgpio_update(char ** hdr, www_packet_struct ** pkts)
 {
   char * field = NULL;
 
-  if (!get_byte("GPIO",      &gpio)                         ) field = "GPIO";
-  if (!get_bool("ACTIVELOW", &active_low) && (field == NULL)) field = "Active Low";
-  if (!get_int( "DURATION",  &duration  ) && (field == NULL)) field = "Durée";
+  if (!www_get_byte("GPIO",      &gpio)                         ) field = "GPIO";
+  if (!www_get_bool("ACTIVELOW", &active_low) && (field == NULL)) field = "Active Low";
+  if (!www_get_int( "DURATION",  &duration  ) && (field == NULL)) field = "Durée";
 
   if (field == NULL) {
     ESP_LOGI(TAG, "Fields OK. Executing task.");
@@ -76,12 +76,12 @@ int testgpio_update(char ** hdr, packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size);         
+  *pkts = www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size);         
   
   return size;
 }
 
-int testgpio_edit(char ** hdr, packet_struct ** pkts)
+int testgpio_edit(char ** hdr, www_packet_struct ** pkts)
 {
   int size;
 
@@ -96,7 +96,7 @@ int testgpio_edit(char ** hdr, packet_struct ** pkts)
   }
 
   *hdr  = http_html_hdr;
-  *pkts = prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size);
 
   return size;
 }

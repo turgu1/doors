@@ -61,6 +61,8 @@ bool doors_initializations()
   doors_get_config();
 
   init_http_server();
+  doors_validate_config(); // will trigger message_0 if any config issue
+  
   init_doors_control();
 
   return true;

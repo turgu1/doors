@@ -26,7 +26,7 @@ static char     wifi_ssid[SSID_SIZE];
 static char     wifi_pwd[PWD_SIZE];
 static uint16_t www_port;
 
-static field_struct net_fields[19] = {
+static www_field_struct net_fields[19] = {
   { &net_fields[ 1], STR,  "SSID",       wifi_ssid                  },
   { &net_fields[ 2], STR,  "PWD",        wifi_pwd                   },
   { &net_fields[ 3], BYTE, "IP_0",       &ip.ip_num[0]              },
@@ -48,26 +48,26 @@ static field_struct net_fields[19] = {
   { NULL,            STR,  "SEVERITY_1", severity_1                 }
 };
 
-int net_update(char ** hdr, packet_struct ** pkts)
+int net_update(char ** hdr, www_packet_struct ** pkts)
 {
   char * field = NULL;
 
-  if (!get_str( "SSID", wifi_ssid, SSID_SIZE) && (field == NULL)) field = "SSID";
-  if (!get_str( "PWD",  wifi_pwd,  PWD_SIZE ) && (field == NULL)) field = "Mot de passe";
+  if (!www_get_str( "SSID", wifi_ssid, SSID_SIZE) && (field == NULL)) field = "SSID";
+  if (!www_get_str( "PWD",  wifi_pwd,  PWD_SIZE ) && (field == NULL)) field = "Mot de passe";
 
-  if (!get_byte ("IP_0",     &ip.ip_num[0]  ) && (field == NULL)) field = "Adr. IP";
-  if (!get_byte ("IP_1",     &ip.ip_num[1]  ) && (field == NULL)) field = "Adr. IP";
-  if (!get_byte ("IP_2",     &ip.ip_num[2]  ) && (field == NULL)) field = "Adr. IP";
-  if (!get_byte ("IP_3",     &ip.ip_num[3]  ) && (field == NULL)) field = "Adr. IP";
-  if (!get_byte ("MASK_0",   &mask.ip_num[0]) && (field == NULL)) field = "Masque";
-  if (!get_byte ("MASK_1",   &mask.ip_num[1]) && (field == NULL)) field = "Masque";
-  if (!get_byte ("MASK_2",   &mask.ip_num[2]) && (field == NULL)) field = "Masque";
-  if (!get_byte ("MASK_3",   &mask.ip_num[3]) && (field == NULL)) field = "Masque";
-  if (!get_byte ("GW_0",     &gw.ip_num[0]  ) && (field == NULL)) field = "Routeur. IP";
-  if (!get_byte ("GW_1",     &gw.ip_num[1]  ) && (field == NULL)) field = "Routeur. IP";
-  if (!get_byte ("GW_2",     &gw.ip_num[2]  ) && (field == NULL)) field = "Routeur. IP";
-  if (!get_byte ("GW_3",     &gw.ip_num[3]  ) && (field == NULL)) field = "Routeur. IP";
-  if (!get_short("WWW_PORT", &www_port      ) && (field == NULL)) field = "Port WWW";
+  if (!www_get_byte ("IP_0",     &ip.ip_num[0]  ) && (field == NULL)) field = "Adr. IP";
+  if (!www_get_byte ("IP_1",     &ip.ip_num[1]  ) && (field == NULL)) field = "Adr. IP";
+  if (!www_get_byte ("IP_2",     &ip.ip_num[2]  ) && (field == NULL)) field = "Adr. IP";
+  if (!www_get_byte ("IP_3",     &ip.ip_num[3]  ) && (field == NULL)) field = "Adr. IP";
+  if (!www_get_byte ("MASK_0",   &mask.ip_num[0]) && (field == NULL)) field = "Masque";
+  if (!www_get_byte ("MASK_1",   &mask.ip_num[1]) && (field == NULL)) field = "Masque";
+  if (!www_get_byte ("MASK_2",   &mask.ip_num[2]) && (field == NULL)) field = "Masque";
+  if (!www_get_byte ("MASK_3",   &mask.ip_num[3]) && (field == NULL)) field = "Masque";
+  if (!www_get_byte ("GW_0",     &gw.ip_num[0]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!www_get_byte ("GW_1",     &gw.ip_num[1]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!www_get_byte ("GW_2",     &gw.ip_num[2]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!www_get_byte ("GW_3",     &gw.ip_num[3]  ) && (field == NULL)) field = "Routeur. IP";
+  if (!www_get_short("WWW_PORT", &www_port      ) && (field == NULL)) field = "Port WWW";
 
   if (field == NULL) {
     ESP_LOGI(TAG, "Fields OK. Saving modifications.");
@@ -108,12 +108,12 @@ int net_update(char ** hdr, packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
 
   return size;
 }
 
-int net_edit(char ** hdr, packet_struct ** pkts)
+int net_edit(char ** hdr, www_packet_struct ** pkts)
 {
   strcpy(wifi_ssid,  doors_config.network.ssid);
   strcpy(wifi_pwd,   doors_config.network.pwd);
@@ -127,7 +127,7 @@ int net_edit(char ** hdr, packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
 
   return size;
 }

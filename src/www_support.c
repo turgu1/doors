@@ -37,7 +37,7 @@ static const char * TAG = "WWW_SUPPORT";
 
 // url parameter extraction struc
 static struct {
-  char name[16];
+  char id[16];
   char value[32];
 } params[15];
 static int param_count;
@@ -60,7 +60,7 @@ static char hex(char ch)
 // Return value: int
 //    number of parameters parsed.
 
-void extract_params(char * str, bool get)
+void www_extract_params(char * str, bool get)
 {
   int idx = 0;
 
@@ -71,8 +71,8 @@ void extract_params(char * str, bool get)
     if (get) *str++ = 0;
     while (*str && (idx < 15)) {
       int len = 0;
-      while ((isalnum(*str) || (*str == '_')) && (len < 15)) params[idx].name[len++] = *str++;
-      params[idx].name[len] = 0;
+      while ((isalnum(*str) || (*str == '_')) && (len < 15)) params[idx].id[len++] = *str++;
+      params[idx].id[len] = 0;
       while (*str && (*str != '&') && (*str != '=')) str++;
       len = 0;
       if (*str == '=') {
@@ -96,7 +96,7 @@ void extract_params(char * str, bool get)
         while (*str && (*str != '&')) str++;
       }
       params[idx].value[len] = 0;
-      ESP_LOGI(TAG, "Param %d: %s = %s.", idx, params[idx].name, params[idx].value);
+      ESP_LOGI(TAG, "Param %d: %s = %s.", idx, params[idx].id, params[idx].value);
       idx++;
       if (*str == '&') str++;
     } 
@@ -105,11 +105,11 @@ void extract_params(char * str, bool get)
   param_count = idx;
 }
 
-bool get_int(char * label, int * val)
+bool www_get_int(char * id, int * val)
 {
   int idx = 0;
 
-  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  while ((idx < param_count) && (strcmp(id, params[idx].id) != 0)) idx++;
   if (idx < param_count) {
     *val = atoi(params[idx].value);
     return true;
@@ -117,12 +117,12 @@ bool get_int(char * label, int * val)
   return false;
 }
 
-bool get_short(char * label, uint16_t * val)
+bool www_get_short(char * id, uint16_t * val)
 {
   int idx = 0;
   int v;
 
-  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  while ((idx < param_count) && (strcmp(id, params[idx].id) != 0)) idx++;
   if (idx < param_count) {
     v = atoi(params[idx].value);
     if ((v >= 0) && (v <= 65535)) {
@@ -136,12 +136,12 @@ bool get_short(char * label, uint16_t * val)
   return false;
 }
 
-bool get_byte(char * label, uint8_t * val)
+bool www_get_byte(char * id, uint8_t * val)
 {
   int idx = 0;
   int v;
 
-  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  while ((idx < param_count) && (strcmp(id, params[idx].id) != 0)) idx++;
   if (idx < param_count) {
     v = atoi(params[idx].value);
     if ((v >= 0) && (v <= 255)) {
@@ -155,12 +155,12 @@ bool get_byte(char * label, uint8_t * val)
   return false;
 }
 
-bool get_bool(char * label, bool * val)
+bool www_get_bool(char * id, bool * val)
 {
   int idx = 0;
   int v;
 
-  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  while ((idx < param_count) && (strcmp(id, params[idx].id) != 0)) idx++;
   if (idx < param_count) {
     v = atoi(params[idx].value);
     if ((v == 0) || (v == 1)) {
@@ -173,11 +173,11 @@ bool get_bool(char * label, bool * val)
   return true;
 }
 
-bool get_str(char * label, char * val, int size)
+bool www_get_str(char * id, char * val, int size)
 {
   int idx = 0;
 
-  while ((idx < param_count) && (strcmp(label, params[idx].name) != 0)) idx++;
+  while ((idx < param_count) && (strcmp(id, params[idx].id) != 0)) idx++;
   if (idx < param_count) {
     if (strlen(params[idx].value) < (size - 1)) {
       strcpy(val, params[idx].value);
@@ -200,7 +200,7 @@ static int  buffer_size;
 static int  buffer_pos;
 
 // Packets of characters prepared for output to the www client
-static packet_struct packets[MAX_PACKET_COUNT];
+static www_packet_struct packets[MAX_PACKET_COUNT];
 static int packet_idx;
 static int packet_pos;
 
@@ -269,7 +269,7 @@ static void free_packets()
   }
 }
 
-packet_struct * prepare_html(char * filename, field_struct * fields, int * size)
+www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields, int * size)
 {
   ESP_LOGI(TAG, "Preparing page %s.", filename);
 
@@ -287,7 +287,7 @@ packet_struct * prepare_html(char * filename, field_struct * fields, int * size)
   rewind(file);
   buffer_size = buffer_pos = 0;
 
-  packet_struct * pkts = NULL;
+  www_packet_struct * pkts = NULL;
   free_packets();
   packet_idx = -1;
   packet_pos = PACKET_SIZE;
@@ -304,25 +304,25 @@ packet_struct * prepare_html(char * filename, field_struct * fields, int * size)
     if (ch == '#') {
       GET_CHAR;
       if (ch == '{') {
-        char field_name[32];
+        char id[32];
         int idx = 0;
         GET_CHAR;
         while (ch == ' ') GET_CHAR;
         while ((ch != ' ') && (ch != '}') && (idx < 31)) {
-          field_name[idx++] = ch;
+          id[idx++] = ch;
           GET_CHAR;
         }
 
         while (ch != '}') GET_CHAR;
-        field_name[idx] = 0;
-        field_struct * field = fields;
+        id[idx] = 0;
+        www_field_struct * field = fields;
 
         while (field != NULL) {
-          if (strcasecmp(field_name, field->name) == 0) break;
+          if (strcasecmp(id, field->id) == 0) break;
           field = field->next;
         }
         if (field == NULL) {
-          ESP_LOGE(TAG, "No field definition for %s in file %s.", field_name, filename);
+          ESP_LOGE(TAG, "No field definition for %s in file %s.", id, filename);
         }
         else {
           char * str;

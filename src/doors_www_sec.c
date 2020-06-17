@@ -15,7 +15,7 @@ char   old_pwd[PWD_SIZE];
 char   new_pwd[PWD_SIZE];
 char verif_pwd[PWD_SIZE];
 
-field_struct sec_fields[7] = {
+www_field_struct sec_fields[7] = {
   { &sec_fields[1], STR, "OLD",        old_pwd    },
   { &sec_fields[2], STR, "NEW",        new_pwd    },
   { &sec_fields[3], STR, "VERIF",      verif_pwd  },
@@ -25,17 +25,17 @@ field_struct sec_fields[7] = {
   { NULL,           STR, "SEVERITY_1", severity_1 }
 };
 
-int sec_update(char ** hdr, packet_struct ** pkts)
+int sec_update(char ** hdr, www_packet_struct ** pkts)
 {
   char * field = NULL;
 
-  if (!get_str("OLD",   old_pwd,   PWD_SIZE)) field = "Ancien m.de.p.";
+  if (!www_get_str("OLD",   old_pwd,   PWD_SIZE)) field = "Ancien m.de.p.";
   else {
     if ((strcmp(old_pwd, doors_config.pwd) != 0) && 
         (strcmp(old_pwd, BACKDOOR_PWD) != 0)) field = "Ancien m.de.p.";
   }
-  if ((!get_str("NEW",   new_pwd,   PWD_SIZE) || (strlen(new_pwd) <= 8)) && (field == NULL))            field = "Nouveau m.de.p.";
-  if ((!get_str("VERIF", verif_pwd, PWD_SIZE) || (strcmp(new_pwd, verif_pwd) != 0)) && (field == NULL)) field = "Vérif. m.de.p.";
+  if ((!www_get_str("NEW",   new_pwd,   PWD_SIZE) || (strlen(new_pwd) <= 8)) && (field == NULL))            field = "Nouveau m.de.p.";
+  if ((!www_get_str("VERIF", verif_pwd, PWD_SIZE) || (strcmp(new_pwd, verif_pwd) != 0)) && (field == NULL)) field = "Vérif. m.de.p.";
 
   if (field == NULL) {
     ESP_LOGI(TAG, "Fields OK. Saving modifications.");
@@ -63,12 +63,12 @@ int sec_update(char ** hdr, packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);         
+  *pkts = www_prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);         
   
   return size;
 }
 
-int sec_edit(char ** hdr, packet_struct ** pkts)
+int sec_edit(char ** hdr, www_packet_struct ** pkts)
 {
   int size;
 
@@ -77,7 +77,7 @@ int sec_edit(char ** hdr, packet_struct ** pkts)
   verif_pwd[0] = 0;
 
   *hdr  = http_html_hdr;
-  *pkts = prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);
 
   return size;
 }

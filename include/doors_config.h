@@ -48,8 +48,8 @@ struct config_struct {
 };
 
 PUBLIC struct config_struct doors_config;
-PUBLIC void seq_to_str(seq_t * seq, char * str, int max_size);
-PUBLIC bool parse_seq(seq_t * seq, char * str, int max_size);
+PUBLIC void config_seq_to_str(seq_t * seq, char * str, int max_size);
+PUBLIC bool config_parse_seq(seq_t * seq, char * str, int max_size);
 PUBLIC bool doors_validate_config();
 PUBLIC bool doors_get_config();
 PUBLIC bool doors_save_config();

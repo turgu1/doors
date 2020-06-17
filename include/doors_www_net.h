@@ -11,8 +11,8 @@
   #define PUBLIC extern
 #endif
 
-PUBLIC int net_update(char ** hdr, packet_struct ** pkts);
-PUBLIC int net_edit(char ** hdr, packet_struct ** pkts);
+PUBLIC int net_update(char ** hdr, www_packet_struct ** pkts);
+PUBLIC int net_edit(char ** hdr, www_packet_struct ** pkts);
 
 #undef PUBLIC
 #endif

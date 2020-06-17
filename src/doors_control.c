@@ -28,8 +28,9 @@ static const uint8_t gpio_button_open[5]  = { 36, 34, 32, 25, 27 };
 static const uint8_t gpio_button_close[5] = { 39, 35, 33, 26, 14 };
 static const uint8_t gpio_relay[8]        = { 23, 22, 21, 19, 18, 05, 17, 16 };
 
-static const uint8_t latch_relay_open     = 4;
-static const uint8_t latch_relay_close    = 2;
+static const uint8_t gpio_latch_relay_open  =  4;
+static const uint8_t gpio_latch_relay_close =  2;
+static const uint8_t gpio_output_enable     = 15;
 
 static const bool active_low = true;
 
@@ -60,10 +61,10 @@ static void relays_control_process(void * not_used)
   
   int i;
 
-  gpio_pad_select_gpio(latch_relay_open);
-  gpio_pad_select_gpio(latch_relay_close);
-  gpio_set_direction(latch_relay_open,   GPIO_MODE_OUTPUT);
-  gpio_set_direction(latch_relay_close,  GPIO_MODE_OUTPUT);
+  gpio_pad_select_gpio(gpio_latch_relay_open);
+  gpio_pad_select_gpio(gpio_latch_relay_close);
+  gpio_set_direction(gpio_latch_relay_open,  GPIO_MODE_OUTPUT);
+  gpio_set_direction(gpio_latch_relay_close, GPIO_MODE_OUTPUT);
 
   for (i = 0; i < 8; i++) {
     gpio_pad_select_gpio(gpio_relay[i]);
@@ -76,11 +77,17 @@ static void relays_control_process(void * not_used)
     gpio_set_level(gpio_relay[i], active_low);
   }
 
-  gpio_set_level(latch_relay_open,  1);
-  gpio_set_level(latch_relay_close, 1);
+  gpio_set_level(gpio_latch_relay_open,  1);
+  gpio_set_level(gpio_latch_relay_close, 1);
   vTaskDelay(pdMS_TO_TICKS(5));
-  gpio_set_level(latch_relay_open,  0);
-  gpio_set_level(latch_relay_close, 0);
+  gpio_set_level(gpio_latch_relay_open,  0);
+  gpio_set_level(gpio_latch_relay_close, 0);
+
+  gpio_pad_select_gpio(gpio_output_enable);
+  gpio_set_direction(gpio_output_enable, GPIO_MODE_OUTPUT);
+  vTaskDelay(pdMS_TO_TICKS(5));
+  gpio_set_level(gpio_output_enable,  0);
+
 
   while (true) {
     uint8_t data;
@@ -136,9 +143,9 @@ static void relays_control_process(void * not_used)
         for (int i = 0; i < 7; i++) {
           gpio_set_level(gpio_relay[i], new_relay_open_values & (1 << i));
         }
-        gpio_set_level(latch_relay_open, 1);
+        gpio_set_level(gpio_latch_relay_open, 1);
         vTaskDelay(pdMS_TO_TICKS(5));
-        gpio_set_level(latch_relay_open, 0);
+        gpio_set_level(gpio_latch_relay_open, 0);
 
         relay_open_values = new_relay_open_values;
       }
@@ -146,9 +153,9 @@ static void relays_control_process(void * not_used)
         for (int i = 0; i < 7; i++) {
           gpio_set_level(gpio_relay[i], new_relay_close_values & (1 << i));
         }
-        gpio_set_level(latch_relay_close, 1);
+        gpio_set_level(gpio_latch_relay_close, 1);
         vTaskDelay(pdMS_TO_TICKS(5));
-        gpio_set_level(latch_relay_close, 0);
+        gpio_set_level(gpio_latch_relay_close, 0);
 
         relay_close_values = new_relay_close_values;
       }

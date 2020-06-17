@@ -14,32 +14,32 @@
 #define MAX_PACKET_COUNT  20
 #define PACKET_SIZE      512
 
-typedef enum { INT, SHORT, BYTE, BOOL, STR } field_type;
+typedef enum { INT, SHORT, BYTE, BOOL, STR } www_field_type;
 
 typedef struct fld_struct {
   struct fld_struct * next;
-  field_type type;
-  char * name;
+  www_field_type type;
+  char * id;
   void * value;
-} field_struct;
+} www_field_struct;
 
 typedef struct pkt_struct {
   int size;
   char * buff;
-} packet_struct;
+} www_packet_struct;
 
-PUBLIC packet_struct * prepare_html(char * filename, 
-                                    field_struct * fields,
-                                    int * size);
+PUBLIC www_packet_struct * www_prepare_html(char             * filename, 
+                                            www_field_struct * fields,
+                                            int              * size);
 PUBLIC void init_www_support();
 
-PUBLIC void extract_params(char * str, bool get);
+PUBLIC void www_extract_params(char * str, bool get);
 
-PUBLIC bool   get_int(char * label, int      * val);
-PUBLIC bool get_short(char * label, uint16_t * val);
-PUBLIC bool  get_byte(char * label, uint8_t  * val);
-PUBLIC bool  get_bool(char * label, bool     * val);
-PUBLIC bool   get_str(char * label, char     * val, int size);
+PUBLIC bool   www_get_int(char * id, int      * val);
+PUBLIC bool www_get_short(char * id, uint16_t * val);
+PUBLIC bool  www_get_byte(char * id, uint8_t  * val);
+PUBLIC bool  www_get_bool(char * id, bool     * val);
+PUBLIC bool   www_get_str(char * id, char     * val, int size);
 
 #undef PUBLIC
 #endif

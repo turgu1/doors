@@ -11,8 +11,8 @@
   #define PUBLIC extern
 #endif
 
-PUBLIC int testgpio_update(char ** hdr, packet_struct ** pkts);
-PUBLIC int testgpio_edit(char ** hdr, packet_struct ** pkts);
+PUBLIC int testgpio_update(char ** hdr, www_packet_struct ** pkts);
+PUBLIC int testgpio_edit(char ** hdr, www_packet_struct ** pkts);
 
 #undef PUBLIC
 #endif

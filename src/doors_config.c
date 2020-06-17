@@ -178,7 +178,7 @@ static void doors_init_config(struct config_struct * cfg)
   if (!cJSON_IsObject(item)) { ESP_LOGE(TAG, "Item [%d] not a valid object.", index); goto fin; } \
   var = item;
 
-bool parse_seq(seq_t * seq, char * str, int max_size)
+bool config_parse_seq(seq_t * seq, char * str, int max_size)
 {
   char *save = str;
   while (*str == ' ') str++;
@@ -260,9 +260,9 @@ static bool doors_get_config_from_file(char * filename)
       GET_VAL(door, doors_config.doors[i].conn_buttons, "conn_buttons"       );
       GET_VAL(door, doors_config.doors[i].conn_relays,  "conn_relays"        );
       GET_STR(door, tmp, "seq_open",  180);
-      if (!parse_seq(doors_config.doors[i].seq_open, tmp, SEQ_SIZE)) goto fin;
+      if (!config_parse_seq(doors_config.doors[i].seq_open, tmp, SEQ_SIZE)) goto fin;
       GET_STR(door, tmp, "seq_close", 180);
-      if (!parse_seq(doors_config.doors[i].seq_close, tmp, SEQ_SIZE)) goto fin;
+      if (!config_parse_seq(doors_config.doors[i].seq_close, tmp, SEQ_SIZE)) goto fin;
     }
 
     completed = true;
@@ -287,7 +287,7 @@ fin:
   return true;
 }
 
-void seq_to_str(seq_t * seq, char * str, int max_size)
+void config_seq_to_str(seq_t * seq, char * str, int max_size)
 {
   int cnt = SEQ_SIZE;
   bool first = true;
@@ -352,10 +352,10 @@ static bool doors_save_config_to_file(char * filename)
     cJSON_AddNumberToObject(door, "conn_buttons",  doors_config.doors[i].conn_buttons );
     cJSON_AddNumberToObject(door, "conn_relays",   doors_config.doors[i].conn_relays  );
     
-    seq_to_str(doors_config.doors[i].seq_open, tmp, 180);
+    config_seq_to_str(doors_config.doors[i].seq_open, tmp, 180);
     cJSON_AddStringToObject(door, "seq_open", tmp);
 
-    seq_to_str(doors_config.doors[i].seq_close, tmp, 180);
+    config_seq_to_str(doors_config.doors[i].seq_close, tmp, 180);
     cJSON_AddStringToObject(door, "seq_close", tmp);
   }
 

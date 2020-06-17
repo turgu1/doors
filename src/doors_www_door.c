@@ -18,7 +18,7 @@ static seq_t   seq_open[SEQ_SIZE], seq_close[SEQ_SIZE];
 static char    name[NAME_SIZE];
 static bool    enabled = false;
 
-static field_struct door_fields[12] = {
+static www_field_struct door_fields[12] = {
   { &door_fields[ 1], BOOL, "ENABLED",    &enabled     },
   { &door_fields[ 2], STR,  "NAME",       name         },
   { &door_fields[ 3], BYTE, "CBUTTON",   &conn_buttons },
@@ -33,27 +33,27 @@ static field_struct door_fields[12] = {
   { NULL,             STR,  "SEVERITY_1", severity_1   }
 };
 
-int door_update(char ** hdr, packet_struct ** pkts)
+int door_update(char ** hdr, www_packet_struct ** pkts)
 {
   char * field = NULL;
 
-  if (!get_byte("DOOR_IDX", &door_idx) || (door_idx >= DOOR_COUNT)) field = "Id Porte";
+  if (!www_get_byte("DOOR_IDX", &door_idx) || (door_idx >= DOOR_COUNT)) field = "Id Porte";
 
-  if (!get_bool("ENABLED",   &enabled        ) && (field == NULL)) field = "Actif";
-  if (!get_str( "NAME",       name, NAME_SIZE) && (field == NULL)) field = "Nom";
-  if (!get_byte("CBUTTON",   &conn_buttons   ) && (field == NULL)) field = "Connecteur Boutons";
-  if (!get_byte("CRELAY",    &conn_relays    ) && (field == NULL)) field = "Connecteur Relais";
+  if (!www_get_bool("ENABLED",   &enabled        ) && (field == NULL)) field = "Actif";
+  if (!www_get_str( "NAME",       name, NAME_SIZE) && (field == NULL)) field = "Nom";
+  if (!www_get_byte("CBUTTON",   &conn_buttons   ) && (field == NULL)) field = "Connecteur Boutons";
+  if (!www_get_byte("CRELAY",    &conn_relays    ) && (field == NULL)) field = "Connecteur Relais";
 
-  if (!get_str( "SOPEN",    seq_open_str,  180 ) && (field == NULL)) field = "Séquence Ouvrir";
+  if (!www_get_str( "SOPEN",    seq_open_str,  180 ) && (field == NULL)) field = "Séquence Ouvrir";
   else {
     memset(seq_open, 0, SEQ_SIZE * sizeof(seq_t));
-    if (!parse_seq(seq_open, seq_open_str, SEQ_SIZE) && (field == NULL)) field = "Séquence Ouvrir";
+    if (!config_parse_seq(seq_open, seq_open_str, SEQ_SIZE) && (field == NULL)) field = "Séquence Ouvrir";
   }
 
-  if (!get_str( "SCLOSE",   seq_close_str, 180 ) && (field == NULL)) field = "Séquence Fermer";
+  if (!www_get_str( "SCLOSE",   seq_close_str, 180 ) && (field == NULL)) field = "Séquence Fermer";
   else {
     memset(seq_close, 0, SEQ_SIZE * sizeof(seq_t));
-    if (!parse_seq(seq_close, seq_close_str, SEQ_SIZE) && (field == NULL)) field = "Séquence Fermer";
+    if (!config_parse_seq(seq_close, seq_close_str, SEQ_SIZE) && (field == NULL)) field = "Séquence Fermer";
   }
 
   if (field == NULL) {
@@ -94,23 +94,23 @@ int door_update(char ** hdr, packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              
+  *pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              
 
   return size;
 }
 
-int door_edit(char ** hdr, packet_struct ** pkts)
+int door_edit(char ** hdr, www_packet_struct ** pkts)
 {
   int size = 0;
 
-  if (get_byte("door", &door_idx)) {
+  if (www_get_byte("door", &door_idx)) {
     door_nbr = door_idx + 1;
     if (door_idx >= DOOR_COUNT) {
       ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
     }
     else {
-      seq_to_str(doors_config.doors[door_idx].seq_open,  seq_open_str,  SEQ_SIZE - 1);
-      seq_to_str(doors_config.doors[door_idx].seq_close, seq_close_str, SEQ_SIZE - 1);
+      config_seq_to_str(doors_config.doors[door_idx].seq_open,  seq_open_str,  SEQ_SIZE - 1);
+      config_seq_to_str(doors_config.doors[door_idx].seq_close, seq_close_str, SEQ_SIZE - 1);
 
       strcpy(name, doors_config.doors[door_idx].name);
 
@@ -119,7 +119,7 @@ int door_edit(char ** hdr, packet_struct ** pkts)
       conn_relays  = doors_config.doors[door_idx].conn_relays + 1;
 
       *hdr  = http_html_hdr;
-      *pkts = prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              
+      *pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              
     }
   }
   else {

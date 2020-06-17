@@ -24,14 +24,14 @@ static const char * TAG = "DOORS_WWW";
 
 // Every field list must have MSG_1, SEVERITY_1, MSG_0 and SEVERITY_0 defined.
 
-field_struct no_param_fields [4] = {
+www_field_struct no_param_fields [4] = {
   { &no_param_fields[1], STR, "MSG_0",      message_0               },
   { &no_param_fields[2], STR, "MSG_1",      message_1               },
   { &no_param_fields[3], STR, "SEVERITY_0", severity_0              },
   { NULL,                STR, "SEVERITY_1", severity_1              }
 };
 
-field_struct index_fields[9] = {
+www_field_struct index_fields[9] = {
   { &index_fields[1], STR, "NAME_0",     doors_config.doors[0].name },
   { &index_fields[2], STR, "NAME_1",     doors_config.doors[1].name },
   { &index_fields[3], STR, "NAME_2",     doors_config.doors[2].name },
@@ -80,13 +80,18 @@ static void http_server_netconn_serve(struct netconn *conn)
     char * path = NULL;
     char * line_end;
 
-    packet_struct * pkts = NULL;
-    char          * hdr  = NULL;
-    int             size;
+    www_packet_struct * pkts = NULL;
+    char              * hdr  = NULL;
+    int                 size;
 
+    if (doors_validate_config()) {
+      message_0[0]  = 0;
+      severity_0[0] = 0;
+    }
 
     if ((buflen >= 5) && (strncmp("POST ", buf, 5) == 0)) {
 
+      // sample:
       // POST /door_update HTTP/1.1
       // Host: 192.168.1.1
       // Origin: http://192.168.1.1
@@ -140,7 +145,7 @@ static void http_server_netconn_serve(struct netconn *conn)
       }
 
       if (parameters != NULL) {
-        extract_params(parameters, false);
+        www_extract_params(parameters, false);
 
         if      (strcmp(path, "/door_update" ) == 0) size =  door_update(&hdr, &pkts);
         else if (strcmp(path, "/sec_update"  ) == 0) size =   sec_update(&hdr, &pkts);
@@ -160,7 +165,6 @@ static void http_server_netconn_serve(struct netconn *conn)
 
       // sample:
       // GET /l HTTP/1.1
-      //
       // Accept: text/html, application/xhtml+xml, image/jxr,
       // Referer: http://192.168.1.222/h
       // Accept-Language: en-US,en;q=0.8,zh-Hans-CN;q=0.5,zh-Hans;q=0.3
@@ -189,15 +193,15 @@ static void http_server_netconn_serve(struct netconn *conn)
 
       if (path != NULL) {
 
-        extract_params(path, true);
+        www_extract_params(path, true);
 
         if (strcmp("/config", path) == 0) {
           hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/config.html", no_param_fields, &size);
+          pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size);
         }
         else if (strcmp("/doorscfg", path) == 0) {
           hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/doorscfg.html", no_param_fields, &size);
+          pkts = www_prepare_html("/spiffs/www/doorscfg.html", no_param_fields, &size);
         }
         else if (strcmp("/doorcfg", path) == 0) {
           size = door_edit(&hdr, &pkts);
@@ -216,10 +220,10 @@ static void http_server_netconn_serve(struct netconn *conn)
         }
         else if (strcmp("/style.css", path) == 0) {
           hdr = http_css_hdr;
-          pkts = prepare_html("/spiffs/www/style.css", NULL, &size);
+          pkts = www_prepare_html("/spiffs/www/style.css", NULL, &size);
         }
         else if (strcmp("/open", path) == 0) {
-          if (get_byte("door", &door_idx)) {
+          if (www_get_byte("door", &door_idx)) {
             ESP_LOGI(TAG, "Open door %d.", door_idx);
             if (door_idx < DOOR_COUNT) {
               if (doors_config.doors[door_idx].enabled) {
@@ -247,10 +251,10 @@ static void http_server_netconn_serve(struct netconn *conn)
             strcpy(severity_1, "error");
           }
           hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
+          pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
         }
         else if (strcmp("/close", path) == 0) {
-          if (get_byte("door", &door_idx)) {
+          if (www_get_byte("door", &door_idx)) {
             ESP_LOGI(TAG, "Close door %d.", door_idx);
             if (door_idx < DOOR_COUNT) {
               if (doors_config.doors[door_idx].enabled) {
@@ -278,11 +282,11 @@ static void http_server_netconn_serve(struct netconn *conn)
             strcpy(severity_1, "error");
           }
           hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
+          pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
         }
         else if ((strcmp("/index", path) == 0) || (strcmp("/", path) == 0)) {
           hdr = http_html_hdr;
-          pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
+          pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
         }
         else if (strncmp("/favicon-", path, 9) == 0) {
           char * fname = (char *) malloc(strlen(path) + strlen("/spiffs/www") + 5);
@@ -314,7 +318,7 @@ static void http_server_netconn_serve(struct netconn *conn)
         }
         else if (strcmp("/browserconfig.xml", path) == 0) {
           hdr = http_xml_hdr;
-          pkts = prepare_html("/spiffs/www/browserconfig.xml", NULL, &size);
+          pkts = www_prepare_html("/spiffs/www/browserconfig.xml", NULL, &size);
         }
         else if (strcmp("/restart", path) == 0) {
           esp_restart();
@@ -326,8 +330,11 @@ static void http_server_netconn_serve(struct netconn *conn)
       }
       else {
         hdr = http_html_hdr;
-        pkts = prepare_html("/spiffs/www/index.html", index_fields, &size);
+        pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
       }
+    }
+    else {
+      hdr = http_html_hdr_not_found;
     }
 
     // Send HTTP response header
@@ -391,7 +398,14 @@ void start_http_server()
 {
   ESP_LOGI(TAG, "Web App is running ... ...");
 
-  xTaskCreate(&http_server, "http_server", 4096, NULL, 5, NULL);
+  xTaskCreatePinnedToCore(
+    &http_server,
+    "http_server", 
+    4096, 
+    NULL, 
+    5, 
+    NULL, 
+    0);               // core id
 }
 
 void init_http_server()
