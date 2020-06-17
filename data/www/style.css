@@ -64,6 +64,10 @@ input[type="text"], input[type="password"] {
   width: 18em;
 }
 
+.medium {
+  width: 10em;
+}
+
 .small {
   width: 5em;
 }

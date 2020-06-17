@@ -145,13 +145,28 @@ static void http_server_netconn_serve(struct netconn *conn)
       }
 
       if (parameters != NULL) {
+
         www_extract_params(parameters, false);
 
-        if      (strcmp(path, "/door_update" ) == 0) size =  door_update(&hdr, &pkts);
-        else if (strcmp(path, "/sec_update"  ) == 0) size =   sec_update(&hdr, &pkts);
-        else if (strcmp(path, "/varia_update") == 0) size = varia_update(&hdr, &pkts);
-        else if (strcmp(path, "/net_update"  ) == 0) size =   net_update(&hdr, &pkts);
-        else if (strcmp(path, "/testgpio_update" ) == 0) size =  testgpio_update(&hdr, &pkts);
+        if (strcmp("/config", path) == 0) {
+          static char mp[PWD_SIZE];
+          hdr = http_html_hdr;
+          if (www_get_str("MP", mp, PWD_SIZE) && 
+              ((strcmp(mp, doors_config.pwd) == 0) || 
+               (strcmp(mp, BACKDOOR_PWD    ) == 0))) {
+            pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size);
+          }
+          else {
+            strcpy(message_1,  "Code d'accès non valide!");
+            strcpy(severity_1, "error");
+            pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
+          }
+        }
+        else if (strcmp(path, "/door_update"    ) == 0) size =     door_update(&hdr, &pkts);
+        else if (strcmp(path, "/sec_update"     ) == 0) size =      sec_update(&hdr, &pkts);
+        else if (strcmp(path, "/varia_update"   ) == 0) size =    varia_update(&hdr, &pkts);
+        else if (strcmp(path, "/net_update"     ) == 0) size =      net_update(&hdr, &pkts);
+        else if (strcmp(path, "/testgpio_update") == 0) size = testgpio_update(&hdr, &pkts);
         else {
           ESP_LOGE(TAG, "Unknown path: %s.", path);
           hdr = http_html_hdr_not_found;
@@ -195,11 +210,7 @@ static void http_server_netconn_serve(struct netconn *conn)
 
         www_extract_params(path, true);
 
-        if (strcmp("/config", path) == 0) {
-          hdr = http_html_hdr;
-          pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size);
-        }
-        else if (strcmp("/doorscfg", path) == 0) {
+        if (strcmp("/doorscfg", path) == 0) {
           hdr = http_html_hdr;
           pkts = www_prepare_html("/spiffs/www/doorscfg.html", no_param_fields, &size);
         }
