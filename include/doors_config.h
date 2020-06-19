@@ -36,7 +36,6 @@ struct network_struct {
 
 struct config_struct {
   uint8_t               version;
-  bool                  setup;
   uint8_t               padding[2];
   
   struct door_struct    doors[DOOR_COUNT];

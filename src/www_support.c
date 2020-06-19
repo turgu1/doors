@@ -38,7 +38,7 @@ static const char * TAG = "WWW_SUPPORT";
 // url parameter extraction struc
 static struct {
   char id[16];
-  char value[32];
+  char value[200];
 } params[15];
 static int param_count;
 
@@ -77,7 +77,7 @@ void www_extract_params(char * str, bool get)
       len = 0;
       if (*str == '=') {
         str++;
-        while ((len < 31) && (*str) && (*str != '&')) {
+        while ((len < 199) && (*str) && (*str != '&')) {
           if (*str == '+') {
             params[idx].value[len++] = ' ';
             str++;
@@ -179,7 +179,7 @@ bool www_get_str(char * id, char * val, int size)
 
   while ((idx < param_count) && (strcmp(id, params[idx].id) != 0)) idx++;
   if (idx < param_count) {
-    if (strlen(params[idx].value) < (size - 1)) {
+    if (strlen(params[idx].value) < size) {
       strcpy(val, params[idx].value);
       return true;
     }

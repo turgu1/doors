@@ -44,13 +44,13 @@ int door_update(char ** hdr, www_packet_struct ** pkts)
   if (!www_get_byte("CBUTTON",   &conn_buttons   ) && (field == NULL)) field = "Connecteur Boutons";
   if (!www_get_byte("CRELAY",    &conn_relays    ) && (field == NULL)) field = "Connecteur Relais";
 
-  if (!www_get_str( "SOPEN",    seq_open_str,  180 ) && (field == NULL)) field = "Séquence Ouvrir";
+  if (!www_get_str( "SOPEN",    seq_open_str,  181 ) && (field == NULL)) field = "Séquence Ouvrir";
   else {
     memset(seq_open, 0, SEQ_SIZE * sizeof(seq_t));
     if (!config_parse_seq(seq_open, seq_open_str, SEQ_SIZE) && (field == NULL)) field = "Séquence Ouvrir";
   }
 
-  if (!www_get_str( "SCLOSE",   seq_close_str, 180 ) && (field == NULL)) field = "Séquence Fermer";
+  if (!www_get_str( "SCLOSE",   seq_close_str, 181 ) && (field == NULL)) field = "Séquence Fermer";
   else {
     memset(seq_close, 0, SEQ_SIZE * sizeof(seq_t));
     if (!config_parse_seq(seq_close, seq_close_str, SEQ_SIZE) && (field == NULL)) field = "Séquence Fermer";
@@ -75,6 +75,7 @@ int door_update(char ** hdr, www_packet_struct ** pkts)
     if (doors_save_config()) {
       strcpy(message_1,  "Mise à jour complétée.");
       strcpy(severity_1, "info");
+      doors_validate_config();
     }
     else {
       strcpy(message_1,  "ERREUR INTERNE!!");
@@ -109,8 +110,8 @@ int door_edit(char ** hdr, www_packet_struct ** pkts)
       ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
     }
     else {
-      config_seq_to_str(doors_config.doors[door_idx].seq_open,  seq_open_str,  SEQ_SIZE - 1);
-      config_seq_to_str(doors_config.doors[door_idx].seq_close, seq_close_str, SEQ_SIZE - 1);
+      config_seq_to_str(doors_config.doors[door_idx].seq_open,  seq_open_str,  181);
+      config_seq_to_str(doors_config.doors[door_idx].seq_close, seq_close_str, 181);
 
       strcpy(name, doors_config.doors[door_idx].name);
 

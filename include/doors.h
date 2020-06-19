@@ -13,6 +13,8 @@
 #include <ctype.h>
 #include <stdbool.h>
 
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+
 #include "esp_spi_flash.h"
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
@@ -23,8 +25,6 @@
 #include "esp_err.h"
 #include "esp_spiffs.h"
 #include "nvs_flash.h"
-
-#define  LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include "esp_log.h"
 
 #define DOOR_COUNT 5
