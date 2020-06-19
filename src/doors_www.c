@@ -30,11 +30,6 @@ static char  door_inactive[DOOR_COUNT][10];
 static char      door_name[DOOR_COUNT][NAME_SIZE];
 static bool   door_enabled[DOOR_COUNT];
 
-static struct netconn * theconn;
-static struct netbuf  * inbuf;
-static char           * buf;
-static uint16_t         buflen;
-
 www_field_struct no_param_fields [4] = {
   { &no_param_fields[1], STR, "MSG_0",      message_0     },
   { &no_param_fields[2], STR, "MSG_1",      message_1     },
@@ -121,6 +116,11 @@ static void close_door()
   }
 }
 
+static struct netconn * theconn;
+static struct netbuf  * inbuf;
+static char           * buf;
+static uint16_t         buflen;
+
 static void send_header(char * hdr, int size)
 {
   static char buff[256];
@@ -167,7 +167,8 @@ static char * find_parameters(int len)
 
   char * data = malloc(len + 1);
   i = 0;
-  while (len--) data[i] = getch();
+  while (len--) data[i++] = getch();
+  data[i] = 0;
   return data;
 }
 
@@ -210,7 +211,7 @@ static int www_post(char ** hdr, www_packet_struct ** pkts)
     int content_length = 0;
 
     // Retrieve length of the parameter string
-    pos = strnstr(buf, "Content-length:", buflen);
+    pos = strnstr(buf, "Content-Length:", buflen);
     if (pos != NULL) {
       pos += 15;
       content_length = atoi(pos);
@@ -219,6 +220,10 @@ static int www_post(char ** hdr, www_packet_struct ** pkts)
 
       parameters = find_parameters(content_length);
     }
+    else {
+      ESP_LOGE(TAG, "Unable to find Content-length.");
+    }
+
     if (parameters != NULL) {
 
       www_extract_params(parameters, false);
