@@ -1,5 +1,4 @@
 #include "doors.h"
-#include "doors_global.h"
 #include "doors_config.h"
 
 #define DOORS_CONTROL 1
@@ -52,7 +51,7 @@ void add_relay_command(uint8_t door_idx, relay_command command)
   xQueueSendToBack(relay_command_queue[door_idx], &command, 0);
 }
 
-static void relays_control_process(void * not_used)
+static void relays_low_level_control_process(void * not_used)
 {
   static uint8_t relay_open_values  = active_low ? 0xFF : 0x00;
   static uint8_t relay_close_values = active_low ? 0xFF : 0x00;
@@ -313,7 +312,7 @@ bool start_doors_control()
         &button_handle[idx], 
         1);               // core id
 
-      if (result != pdPASS) {
+      if (result != pdTRUE) {
         ESP_LOGE(TAG, "Unable to start door %d button control process.", idx);
         return false;
       }
@@ -325,13 +324,18 @@ bool start_doors_control()
   relays_control_queue = xQueueCreate(20, 1);
        
   result = xTaskCreatePinnedToCore(
-    &relays_control_process,          // low_level relays control (at gpio level)
+    &relays_low_level_control_process,          // low_level relays control (at gpio level)
     "relays", 
     2048, 
     NULL,  // Must be statically defined for the life of the process 
     5, 
     &relays_handle, 
     1);               // core id
+
+  if (result != pdTRUE) {
+    ESP_LOGE(TAG, "Unable to start relay low level control process (%d).", result);
+    return false;
+  }
 
   for (uint8_t idx = 0; idx < DOOR_COUNT; idx++) {
 
@@ -343,7 +347,7 @@ bool start_doors_control()
       process_name[14] = 0;
       doors_idx[idx] = idx;
 
-       result = xTaskCreatePinnedToCore(
+      result = xTaskCreatePinnedToCore(
         &door_relay_control_process,  // relays control (at command level)
         process_name, 
         2048, 
@@ -352,7 +356,7 @@ bool start_doors_control()
         &relay_handle[idx], 
         1);               // core id
 
-      if (result != pdPASS) {
+      if (result != pdTRUE) {
         ESP_LOGE(TAG, "Unable to start door %d relay control process (%d).", idx, result);
         return false;
       }
@@ -374,7 +378,7 @@ void stop_doors_control()
   vTaskDelete(relays_handle);
 }
 
-void init_doors_control()
+bool init_doors_control()
 {
-
+  return true;
 }

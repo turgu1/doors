@@ -16,7 +16,7 @@ typedef enum { RELAY_OPEN, RELAY_CLOSE, RELAY_STOP, RELAY_IDLE } relay_command;
 PUBLIC void add_relay_command(uint8_t door_idx, relay_command command);
 PUBLIC bool start_doors_control();
 PUBLIC void stop_doors_control();
-PUBLIC void init_doors_control();
+PUBLIC bool init_doors_control();
 
 #undef PUBLIC
 #endif

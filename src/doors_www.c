@@ -434,10 +434,7 @@ static void http_server_netconn_serve(struct netconn *conn)
     char              * hdr  = NULL;
     int                 size = 0;
 
-    if (doors_validate_config()) {
-      message_0[0]  = 0;
-      severity_0[0] = 0;
-    }
+    if (doors_validate_config()) set_main_message("", "", NONE);
 
     if ((buflen >= 5) && (strncmp("POST ", buf, 5) == 0)) {
       size = www_post(&hdr, &pkts);
@@ -496,11 +493,13 @@ static void http_server(void *pvParameters)
   netconn_delete(conn);
 }
 
-void start_http_server() 
+bool start_http_server() 
 {
+  BaseType_t result;
+
   ESP_LOGI(TAG, "Web App is running ... ...");
 
-  xTaskCreatePinnedToCore(
+  result = xTaskCreatePinnedToCore(
     &http_server,
     "http_server", 
     4096, 
@@ -508,18 +507,21 @@ void start_http_server()
     5, 
     NULL, 
     0);               // core id
+  
+  if (result != pdTRUE) {
+    ESP_LOGE(TAG, "Unable to start http server process (%d).", result);
+    return false;
+  }
+
+  return true;
 }
 
-void init_http_server()
+bool init_http_server()
 {
-  message_0[0] = 0;
-  message_1[0] = 0;
-  strcpy(severity_0, "none");
-  strcpy(severity_1, "none");
-
   for (int i = 0; i < DOOR_COUNT; i++) {
     door_enabled[i] = doors_config.doors[i].enabled;
     strcpy(door_inactive[i], door_enabled[i] ? "" : "inactive");
     strcpy(    door_name[i], doors_config.doors[i].name);
   }
+  return true;
 }

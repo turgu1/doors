@@ -133,18 +133,19 @@ static void sta_event_handler(void            * arg,
       }
     }
     else {
+      set_state_led_off();
       ESP_LOGI(TAG, "Wifi Disconnected.");
       vTaskDelay(pdMS_TO_TICKS(10000)); // wait 10 sec
       ESP_LOGI(TAG, "retry to connect to the AP");
       esp_wifi_connect();
     }
-
   } 
   else if ((event_base == IP_EVENT) && (event_id == IP_EVENT_STA_GOT_IP)) {
     ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
     ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
     s_retry_num = 0;
     xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
+    if (!wifi_first_start) set_state_led_on();
     wifi_first_start = false;
   }
 }

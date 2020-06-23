@@ -5,12 +5,12 @@
   opacity: 1;
   border: none;
   color: white;
-  padding: 15px 32px;
+  padding: 10px 20px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 16px;
-  margin: 4px 2px;
+  margin: 2px 2px;
   cursor: pointer;
   border-radius: 4px;
 }
@@ -84,16 +84,19 @@ div.alert-info {
   display: block;
   color: green;
   text-align: center;
+  font-weight: bold;
 }
 
 div.alert-warning {
   display: block;
   color: orange;
   text-align: center;
+  font-weight: bold;
 }
 
 div.alert-error {
   display: block;
   color: red;
   text-align: center;
+  font-weight: bold;
 }

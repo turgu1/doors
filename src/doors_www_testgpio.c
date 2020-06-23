@@ -1,5 +1,4 @@
 #include "doors.h"
-#include "doors_global.h"
 #include "doors_config.h"
 #include "doors_www.h"
 #include "www_support.h"
@@ -48,7 +47,7 @@ int testgpio_update(char ** hdr, www_packet_struct ** pkts)
 	  gpio_pad_select_gpio(gpio);
 	  gpio_set_direction(gpio, GPIO_MODE_OUTPUT);
 
-    if (state.main_state == RUN) change_main_state(STOP);
+    if (state.main_state == RUN) set_main_state(STOP);
 
     gpio_set_level(gpio, active_low ? 1 : 0);
     vTaskDelay(pdMS_TO_TICKS(1000));

@@ -96,10 +96,7 @@ bool doors_validate_config()
   return true;
 
 err:
-  strcpy(message_0,  "ERREUR: ");
-  strcat(message_0,  msg);
-  strcpy(severity_0, "error");
-
+  set_main_message("ERREUR:", msg, ERROR);
   return false;
 }
 

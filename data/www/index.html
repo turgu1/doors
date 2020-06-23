@@ -1,33 +1,3 @@
-<html>
-<head>
-  <title> Gestion des portes </title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width">
-  <link rel="stylesheet" type="text/css" href="./style.css">
-  <!-- generics -->
-  <link rel="icon" href="./favicon-32.png" sizes="32x32">
-  <link rel="icon" href="./favicon-57.png" sizes="57x57">
-  <link rel="icon" href="./favicon-76.png" sizes="76x76">
-  <link rel="icon" href="./favicon-96.png" sizes="96x96">
-  <link rel="icon" href="./favicon-128.png" sizes="128x128">
-  <link rel="icon" href="./favicon-192.png" sizes="192x192">
-  <link rel="icon" href="./favicon-228.png" sizes="228x228">
-
-  <!-- Android -->
-  <link rel="shortcut icon" sizes="196x196" href=“./favicon-196.png">
-
-  <!-- iOS -->
-  <link rel="apple-touch-icon" href="./favicon-120.png" sizes="120x120">
-  <link rel="apple-touch-icon" href="./favicon-152.png" sizes="152x152">
-  <link rel="apple-touch-icon" href="./favicon-180.png" sizes="180x180">
-
-  <!-- Windows 8 IE 10-->
-  <meta name="msapplication-TileColor" content="#FFFFFF">
-  <meta name="msapplication-TileImage" content="./favicon-144.png">
-
-  <!— Windows 8.1 + IE11 and above —>
-  <meta name="msapplication-config" content="./browserconfig.xml" />
-</head>
 <body>
   <h1>Gestion des portes</h1>
   <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
@@ -63,11 +33,25 @@
     </tbody>
   </table>
   <hr/>
-  <form action="./config" method="post" class="form-style">
-    <div class="form-style">
-      <input type="submit" value="Configuration" class="submit button button2 medium">
-      <input type="password" maxlength="15" name="MP" id="MP" required title="Code d'accès" value="">
-    </div>
-  </form>
+  <a onclick="check_session();" class="button button2 medium">Configuration</a><br/>
+  <div id="ask_form" style="display: none;">
+    <form action="./config" method="post" class="form-style">
+      <div class="form-style">
+        <label for="MP">Code d'accès: </label>
+        <input type="password" maxlength="15" name="MP" id="MP" required title="Code d'accès" value="">
+        <input type="submit" value="OK" class="submit button button2 small">
+      </div>
+    </form>
+  </div>
+  <script>
+    function check_session() {
+      if (sessionStorage.getItem("m") == null) {
+        document.getElementById("ask_form").style.display = "block";
+      }
+      else {
+        window.location.href = "./config";
+      }
+    }
+  </script>
 </body>
 </html>

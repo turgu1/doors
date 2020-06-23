@@ -269,9 +269,40 @@ static void free_packets()
   }
 }
 
+void retrieve_header()
+{
+  char * filename = "/spiffs/www/header.html";
+
+  file = fopen(filename, "r");
+ 
+  if (file == NULL) {
+    ESP_LOGE(TAG, "File %s does not exists.", filename);
+  }
+
+  file_pos = 0;
+
+  fseek(file, 0L, SEEK_END);
+  file_size = ftell(file);
+  rewind(file);
+  buffer_size = buffer_pos = 0;
+
+  char ch;
+
+  while ((ch = get_char()) != 0) put_char(ch);
+
+  fclose(file);
+}
+
 www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields, int * size)
 {
   ESP_LOGI(TAG, "Preparing page %s.", filename);
+
+  www_packet_struct * pkts = NULL;
+  free_packets();
+  packet_idx = -1;
+  packet_pos = PACKET_SIZE;
+
+  retrieve_header();
 
   file = fopen(filename, "r");
  
@@ -286,11 +317,6 @@ www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields,
   file_size = ftell(file);
   rewind(file);
   buffer_size = buffer_pos = 0;
-
-  www_packet_struct * pkts = NULL;
-  free_packets();
-  packet_idx = -1;
-  packet_pos = PACKET_SIZE;
 
   char ch;
 

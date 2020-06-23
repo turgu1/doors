@@ -57,13 +57,8 @@ PUBLIC char * http_png_hdr
 #endif
 ;
 
-PUBLIC char message_0[MESSAGE_SIZE];
-PUBLIC char message_1[MESSAGE_SIZE];
-PUBLIC char severity_0[10];
-PUBLIC char severity_1[10];
-
-PUBLIC void start_http_server();
-PUBLIC void init_http_server();
+PUBLIC bool start_http_server();
+PUBLIC bool init_http_server();
 
 #undef PUBLIC
 #endif
