@@ -278,7 +278,7 @@ static int www_post(char ** hdr, www_packet_struct ** pkts)
         if (www_get_str("MP", mp, PWD_SIZE) && 
             ((strcmp(mp, doors_config.pwd) == 0) || 
               (strcmp(mp, BACKDOOR_PWD    ) == 0))) {
-          strcpy(m, "ok");
+          strcpy(m, "\"ok\"");
           *pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size, true);
           update_last_config_access();
           config_ip = remote_ip.u_addr.ip4;

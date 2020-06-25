@@ -33,8 +33,8 @@
 
 #define SEQ_SIZE     (19 + 1) // -1 = end of list
 #define NAME_SIZE    (31 + 1)
-#define SSID_SIZE    (21 + 1)
-#define PWD_SIZE     (15 + 1)
+#define SSID_SIZE    (31 + 1)
+#define PWD_SIZE     (31 + 1)
 #define IP_SIZE      (15 + 1)
 #define MESSAGE_SIZE (59 + 1)
 

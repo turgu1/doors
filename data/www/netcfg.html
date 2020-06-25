@@ -6,11 +6,11 @@
   <form action="./net_update" method="post" class="form-style">
     <div class="form-style">
       <label for="ssid">SSID: </label>
-      <input type="text" maxlength="21" name="SSID" id="SSID" required title="Longueur maxi: 21" value="#{SSID}"/>
+      <input type="text" maxlength="31" name="SSID" id="SSID" required title="Longueur maxi: 31" value="#{SSID}"/>
     </div>
     <div class="form-style">
       <label for="psw">Mot de passe: </label>
-      <input type="password" maxlength="15" name="PWD" id="PWD" required title="Longueur maxi: 15" value="#{PWD}"/>
+      <input type="password" minlength="8" maxlength="31" name="PWD" id="PWD" required title=", Longueur minimum: 8, longueur maximum: 31" value="#{PWD}"/>
     </div>
     <div class="form-style">
       <label for="ipaddr_1">Adresse IP: </label>
