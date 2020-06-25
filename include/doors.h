@@ -45,7 +45,8 @@
 #define GPIO_LED_MAIN_STATE 13
 #define GPIO_LED_ERROR      12
 
-#define TIMEOUT_DURATION (1000*60*5)
+// Timeout duration is set to 15 minutes
+#define TIMEOUT_DURATION (1000*60*15)
 
 typedef enum { IDDLE, OPENING, CLOSING, STOPPED, DISABLE } DOOR_STATE;
 typedef enum { STOP, RUN } MAIN_STATE;
