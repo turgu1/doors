@@ -537,7 +537,7 @@ static void http_server_netconn_serve(struct netconn *conn)
     char              * hdr  = NULL;
     int                 size = 0;
 
-    if (doors_validate_config()) set_main_message("", "", NONE);
+    doors_validate_config();
 
     if ((buflen >= 5) && (strncmp("POST ", buf, 5) == 0)) {
       size = www_post(&hdr, &pkts);

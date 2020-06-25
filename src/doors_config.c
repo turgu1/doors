@@ -93,6 +93,7 @@ bool doors_validate_config()
   msg = "MOT DE PASSE!";
   VERIF0((doors_config.pwd[0] != 0), "Configuration password empty.")
 
+  set_main_message("", "", NONE);
   return true;
 
 err:

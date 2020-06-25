@@ -46,7 +46,6 @@ int sec_update(char ** hdr, www_packet_struct ** pkts)
     if (doors_save_config()) {
       strcpy(message_1,  "Mise à jour complétée.");
       strcpy(severity_1, "info");
-      doors_validate_config();
     }
     else {
       strcpy(message_1,  "ERREUR INTERNE!!");
