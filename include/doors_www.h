@@ -57,6 +57,26 @@ PUBLIC char * http_png_hdr
 #endif
 ;
 
+PUBLIC char * http_restart
+#if DOORS_WWW
+ =
+  "HTTP/1.1 200 OK\r\n"
+  "Content-type: text/html\r\n"
+  "Content-Length: %d\r\n\r\n"
+  "<html><head>"
+    "<meta charset=\"UTF-8\">"
+    "<meta name=\"viewport\" content=\"width=device-width\">"
+    "<meta http-equiv=\"refresh\" content=\"30; URL='./index'\" />"
+  "</head><body>"
+  "<p>Redémarrage... attendre 30 secondes...</p>"
+  "<body></html>"
+#endif
+;
+
+// Size of the <html>...</html> string above
+
+#define http_restart_size 213
+
 PUBLIC bool start_http_server();
 PUBLIC bool init_http_server();
 

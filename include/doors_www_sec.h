@@ -12,7 +12,7 @@
 #endif
 
 PUBLIC int sec_update(char ** hdr, www_packet_struct ** pkts);
-PUBLIC int sec_edit(char ** hdr, www_packet_struct ** pkts);
+PUBLIC int   sec_edit(char ** hdr, www_packet_struct ** pkts);
 
 #undef PUBLIC
 #endif

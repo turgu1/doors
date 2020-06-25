@@ -46,7 +46,7 @@ void startup_blinking_error(uint8_t count)
       set_error_led_off();
       vTaskDelay(pdMS_TO_TICKS(300));
     }
-    vTaskDelay(pdMS_TO_TICKS(300));
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
@@ -188,7 +188,7 @@ void app_main(void)
     };
   }
   else {
-    ESP_LOGE(TAG, "Unable to start network. Software issue");
+    ESP_LOGE(TAG, "Unable to start network. Software issue.");
     startup_blinking_error(10);
 
   }

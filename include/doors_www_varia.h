@@ -12,7 +12,7 @@
 #endif
 
 PUBLIC int varia_update(char ** hdr, www_packet_struct ** pkts);
-PUBLIC int varia_edit(char ** hdr, www_packet_struct ** pkts);
+PUBLIC int   varia_edit(char ** hdr, www_packet_struct ** pkts);
 
 #undef PUBLIC
 #endif

@@ -21,6 +21,9 @@ static QueueHandle_t relays_control_queue;
 #define RELAY_OPEN   0
 #define RELAY_CLOSE  1
 
+#define HIGH 1
+#define LOW  0
+
 #define ISACTIVE(bit, active_low) ((bit && !active_low) || (!bit && active_low))
 
 static const uint8_t gpio_button_open[5]  = { 36, 34, 32, 25, 27 };
@@ -30,8 +33,6 @@ static const uint8_t gpio_relay[8]        = { 23, 22, 21, 19, 18, 05, 17, 16 };
 static const uint8_t gpio_latch_relay_open  =  4;
 static const uint8_t gpio_latch_relay_close =  2;
 static const uint8_t gpio_output_enable     = 15;
-
-static const bool active_low = true;
 
 static void set_relay(uint8_t connector, relay_command command, bool level) 
 {
@@ -53,8 +54,8 @@ void add_relay_command(uint8_t door_idx, relay_command command)
 
 static void relays_low_level_control_process(void * not_used)
 {
-  static uint8_t relay_open_values  = active_low ? 0xFF : 0x00;
-  static uint8_t relay_close_values = active_low ? 0xFF : 0x00;
+  static uint8_t relay_open_values  = 0xFF;
+  static uint8_t relay_close_values = 0xFF;
   static uint8_t new_relay_open_values;
   static uint8_t new_relay_close_values;
   
@@ -73,14 +74,14 @@ static void relays_low_level_control_process(void * not_used)
   vTaskDelay(pdMS_TO_TICKS(50));
 
   for (i = 0; i < 8; i++) {
-    gpio_set_level(gpio_relay[i], active_low);
+    gpio_set_level(gpio_relay[i], HIGH);
   }
 
-  gpio_set_level(gpio_latch_relay_open,  1);
-  gpio_set_level(gpio_latch_relay_close, 1);
+  gpio_set_level(gpio_latch_relay_open,  HIGH);
+  gpio_set_level(gpio_latch_relay_close, HIGH);
   vTaskDelay(pdMS_TO_TICKS(5));
-  gpio_set_level(gpio_latch_relay_open,  0);
-  gpio_set_level(gpio_latch_relay_close, 0);
+  gpio_set_level(gpio_latch_relay_open,  LOW);
+  gpio_set_level(gpio_latch_relay_close, LOW);
 
   gpio_pad_select_gpio(gpio_output_enable);
   gpio_set_direction(gpio_output_enable, GPIO_MODE_OUTPUT);
@@ -197,7 +198,7 @@ static void door_relay_control_process(void * idx)
 
       if (new_command != current_command) {
         if (current_command != RELAY_IDLE) {
-          set_relay(conn_relays, current_command, active_low);
+          set_relay(conn_relays, current_command, HIGH);
           waitTime = pdMS_TO_TICKS(250);
         }
         current_command = (new_command == RELAY_STOP) ? RELAY_IDLE : new_command;
@@ -210,11 +211,11 @@ static void door_relay_control_process(void * idx)
     else if (current_command != RELAY_IDLE) {
       if (((current_command == RELAY_OPEN) && (seq_open[seq_idx] == 0)) ||
           ((current_command == RELAY_CLOSE) && (seq_close[seq_idx] == 0))) {
-        set_relay(conn_relays, current_command, active_low);
+        set_relay(conn_relays, current_command, HIGH);
         current_command = RELAY_IDLE;
       }
       else {
-        set_relay(conn_relays, current_command, (seq_idx & 1) ? active_low : !active_low);
+        set_relay(conn_relays, current_command, (seq_idx & 1) ? HIGH : LOW);
         waitTime = pdMS_TO_TICKS(seq_open[seq_idx++]);
       }
     }
@@ -245,7 +246,7 @@ static void door_button_control_process(void * idx)
   while (true) {
     vTaskDelay(pdMS_TO_TICKS(50));
 
-    if (ISACTIVE(gpio_get_level(bopen), active_low)) {
+    if (ISACTIVE(gpio_get_level(bopen), HIGH)) {
       if (button_state & BUTTON_OPEN_MASK) {
         if (button_state & BUTTON_OPEN_START) {
           button_state = (button_state & BUTTON_CLOSE_MASK) | BUTTON_OPEN;
@@ -260,7 +261,7 @@ static void door_button_control_process(void * idx)
       button_state &= BUTTON_CLOSE_MASK; // Clear button open bits
     }
 
-    if (ISACTIVE(gpio_get_level(bclose), active_low)) {
+    if (ISACTIVE(gpio_get_level(bclose), HIGH)) {
       if (button_state & BUTTON_CLOSE_MASK) {
         if (button_state & BUTTON_CLOSE_START) {
           button_state = (button_state & BUTTON_OPEN_MASK) | BUTTON_CLOSE;

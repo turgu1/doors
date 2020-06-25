@@ -30,7 +30,8 @@ typedef struct pkt_struct {
 
 PUBLIC www_packet_struct * www_prepare_html(char             * filename, 
                                             www_field_struct * fields,
-                                            int              * size);
+                                            int              * size,
+                                            bool               header);
 PUBLIC void init_www_support();
 
 PUBLIC void www_extract_params(char * str, bool get);

@@ -18,6 +18,7 @@
 .align {
   display: block;
 }
+
 .button1 { background-color: #4CAF50; } /* Green */
 .button2 { background-color: #008CBA; } /* Blue */
 .button3 { background-color: #DC143C; } /* Red */

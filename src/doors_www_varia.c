@@ -52,7 +52,7 @@ int varia_update(char ** hdr, www_packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/variacfg.html", varia_fields, &size);         
+  *pkts = www_prepare_html("/spiffs/www/variacfg.html", varia_fields, &size, true);         
   
   return size;
 }
@@ -64,7 +64,7 @@ int varia_edit(char ** hdr, www_packet_struct ** pkts)
   relay_abort_length  = doors_config.relay_abort_length;
 
   *hdr  = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/variacfg.html", varia_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/variacfg.html", varia_fields, &size, true);
 
   return size;
 }

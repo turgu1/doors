@@ -64,7 +64,7 @@ int sec_update(char ** hdr, www_packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);         
+  *pkts = www_prepare_html("/spiffs/www/seccfg.html", sec_fields, &size, true);         
   
   return size;
 }
@@ -78,7 +78,7 @@ int sec_edit(char ** hdr, www_packet_struct ** pkts)
   verif_pwd[0] = 0;
 
   *hdr  = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/seccfg.html", sec_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/seccfg.html", sec_fields, &size, true);
 
   return size;
 }

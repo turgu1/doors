@@ -75,7 +75,7 @@ int testgpio_update(char ** hdr, www_packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size);         
+  *pkts = www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size, true);         
   
   return size;
 }
@@ -95,7 +95,7 @@ int testgpio_edit(char ** hdr, www_packet_struct ** pkts)
   }
 
   *hdr  = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size, true);
 
   return size;
 }

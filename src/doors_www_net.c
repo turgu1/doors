@@ -109,7 +109,7 @@ int net_update(char ** hdr, www_packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/netcfg.html", net_fields, &size, true);
 
   return size;
 }
@@ -128,7 +128,7 @@ int net_edit(char ** hdr, www_packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/netcfg.html", net_fields, &size);
+  *pkts = www_prepare_html("/spiffs/www/netcfg.html", net_fields, &size, true);
 
   return size;
 }

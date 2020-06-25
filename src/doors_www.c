@@ -24,11 +24,17 @@ static const char * TAG = "DOORS_WWW";
 
 // Every field list must have MSG_1, SEVERITY_1, MSG_0 and SEVERITY_0 defined.
 
-static uint8_t door_idx;
+static uint8_t  door_idx;
+static uint32_t last_config_access = 0;
 
-static char  door_inactive[DOOR_COUNT][10];
-static char      door_name[DOOR_COUNT][NAME_SIZE];
-static bool   door_enabled[DOOR_COUNT];
+static char   door_inactive[DOOR_COUNT][10];
+static char       door_name[DOOR_COUNT][NAME_SIZE];
+static bool    door_enabled[DOOR_COUNT];
+static char               m[12];
+static char      push_state[80];
+static ip4_addr_t config_ip;
+
+static bool restarting;
 
 www_field_struct no_param_fields [4] = {
   { &no_param_fields[1], STR, "MSG_0",      message_0     },
@@ -37,7 +43,7 @@ www_field_struct no_param_fields [4] = {
   { NULL,                STR, "SEVERITY_1", severity_1    }
 };
 
-www_field_struct index_fields[14] = {
+www_field_struct index_fields[16] = {
   { &index_fields[1],  STR, "NAME_0",     door_name[0]    },
   { &index_fields[2],  STR, "NAME_1",     door_name[1]    },
   { &index_fields[3],  STR, "NAME_2",     door_name[2]    },
@@ -48,11 +54,48 @@ www_field_struct index_fields[14] = {
   { &index_fields[8],  STR, "ACTIVE_2",   door_inactive[2]},
   { &index_fields[9],  STR, "ACTIVE_3",   door_inactive[3]},
   { &index_fields[10], STR, "ACTIVE_4",   door_inactive[4]},
-  { &index_fields[11], STR, "MSG_0",      message_0       },
-  { &index_fields[12], STR, "MSG_1",      message_1       },
-  { &index_fields[13], STR, "SEVERITY_0", severity_0      },
+  { &index_fields[11], STR, "M",          m               },
+  { &index_fields[12], STR, "S",          push_state      },
+  { &index_fields[13], STR, "MSG_0",      message_0       },
+  { &index_fields[14], STR, "MSG_1",      message_1       },
+  { &index_fields[15], STR, "SEVERITY_0", severity_0      },
   { NULL,              STR, "SEVERITY_1", severity_1      }
 };
+
+static bool timeout()
+{
+  TickType_t current_time = xTaskGetTickCount();
+
+  return (last_config_access == 0) || 
+         ((current_time - last_config_access) > pdMS_TO_TICKS(TIMEOUT_DURATION));
+}
+
+static void update_last_config_access()
+{
+  last_config_access = xTaskGetTickCount();
+}
+
+static bool is_a_valid_access(ip4_addr_t * ip)
+{
+  return (config_ip.addr == ip->addr) && (last_config_access != 0);
+}
+
+static void reset_config_access()
+{
+  config_ip.addr = 0;
+  last_config_access = 0;
+  strcpy(m, "null");
+}
+
+static void set_push_state()
+{
+  strcpy(push_state, "history.pushState({id:'homepage'},'Gestion des portes','./index');");
+}
+
+static void clear_push_state()
+{
+  push_state[0] = 0;
+}
 
 static void open_door()
 {
@@ -235,22 +278,52 @@ static int www_post(char ** hdr, www_packet_struct ** pkts)
         if (www_get_str("MP", mp, PWD_SIZE) && 
             ((strcmp(mp, doors_config.pwd) == 0) || 
               (strcmp(mp, BACKDOOR_PWD    ) == 0))) {
-          *pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size);
+          strcpy(m, "ok");
+          *pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size, true);
+          update_last_config_access();
+          config_ip = remote_ip.u_addr.ip4;
         }
         else {
           strcpy(message_1,  "Code d'accès non valide!");
           strcpy(severity_1, "error");
-          *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
+          strcpy(m, "null");
+          set_push_state();
+          *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
+          clear_push_state();
         }
       }
-      else if (strcmp(path, "/door_update"    ) == 0) size =     door_update(hdr, pkts);
-      else if (strcmp(path, "/sec_update"     ) == 0) size =      sec_update(hdr, pkts);
-      else if (strcmp(path, "/varia_update"   ) == 0) size =    varia_update(hdr, pkts);
-      else if (strcmp(path, "/net_update"     ) == 0) size =      net_update(hdr, pkts);
-      else if (strcmp(path, "/testgpio_update") == 0) size = testgpio_update(hdr, pkts);
+      else if (!is_a_valid_access(&(remote_ip.u_addr.ip4))) {
+        strcpy(message_1,  "Accès non autorisé!");
+        strcpy(severity_1, "error");
+        *hdr = http_html_hdr;
+        set_push_state();
+        *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
+        clear_push_state();
+      }
+      else if (timeout()) {
+        ESP_LOGI(TAG, "Timeout.");
+        if (last_config_access != 0) {
+          strcpy(m, "\"timeout\"");
+          strcpy(message_1,  "Temps mort!");
+          strcpy(severity_1, "error");
+        }
+        *hdr = http_html_hdr;
+        set_push_state();
+        *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
+        reset_config_access();
+        clear_push_state();
+      }
       else {
-        ESP_LOGE(TAG, "Unknown path: %s.", path);
-        *hdr = http_html_hdr_not_found;
+        update_last_config_access();
+        if      (strcmp(path, "/door_update"    ) == 0) size =     door_update(hdr, pkts);
+        else if (strcmp(path, "/sec_update"     ) == 0) size =      sec_update(hdr, pkts);
+        else if (strcmp(path, "/varia_update"   ) == 0) size =    varia_update(hdr, pkts);
+        else if (strcmp(path, "/net_update"     ) == 0) size =      net_update(hdr, pkts);
+        else if (strcmp(path, "/testgpio_update") == 0) size = testgpio_update(hdr, pkts);
+        else {
+          ESP_LOGE(TAG, "Unknown path: %s.", path);
+          *hdr = http_html_hdr_not_found;
+        }
       }
     }
     else {
@@ -278,6 +351,8 @@ int www_get(char ** hdr, www_packet_struct ** pkts)
   char * line_end;
   char * png_buffer = NULL;
 
+  ip_addr_t remote_ip;
+
   // sample:
   // GET /l HTTP/1.1
   // Accept: text/html, application/xhtml+xml, image/jxr,
@@ -296,101 +371,129 @@ int www_get(char ** hdr, www_packet_struct ** pkts)
     int path_length = line_end - buf - strlen("GET ") - strlen("HTTP/1.1") - 2;
     strncpy(path, &buf[4], path_length);
     path[path_length] = '\0';
-
+      
     //Get remote IP address
-    ip_addr_t remote_ip;
     u16_t     remote_port;
     netconn_getaddr(theconn, &remote_ip, &remote_port, 0);
     ESP_LOGI(TAG, "[ "IPSTR" ] GET %s", IP2STR(&(remote_ip.u_addr.ip4)), path);
 
-    if (path != NULL) {
+    www_extract_params(path, true);
 
-      www_extract_params(path, true);
+    if (strcmp("/style.css", path) == 0) {
+      *hdr = http_css_hdr;
+      *pkts = www_prepare_html("/spiffs/www/style.css", NULL, &size, false);
+    }
+    else if (strcmp("/open", path) == 0) {
+      open_door();
+      *hdr = http_html_hdr;
+      set_push_state();
+      *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
+      clear_push_state();
+    }
+    else if (strcmp("/close", path) == 0) {
+      close_door();
+      *hdr = http_html_hdr;
+      set_push_state();
+      *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
+      clear_push_state();
+    }
+    else if ((strcmp("/index", path) == 0) || (strcmp("/", path) == 0)) {
+      if (timeout()) {
+        ESP_LOGI(TAG, "Timeout.");
+        reset_config_access();
+      }
+      *hdr = http_html_hdr;
+      *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
+    }
+    else if (strncmp("/favicon-", path, 9) == 0) {
+      char * fname = (char *) malloc(strlen(path) + strlen("/spiffs/www") + 5);
+      strcpy(fname, "/spiffs/www");
+      strcat(fname, path);
+      FILE *f = fopen(fname, "r");
+      if (f != NULL) {
+        fseek(f, 0L, SEEK_END);
+        size = ftell(f);
+        rewind(f);
+        send_header(http_png_hdr, size);
+        png_buffer = (char *) malloc(size);
+        fread(png_buffer, 1, size, f);
+        fclose(f);
 
-      if (strcmp("/config", path) == 0) {
-        *hdr = http_html_hdr;
-        *pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size);
-      }
-      else if (strcmp("/doorscfg", path) == 0) {
-        *hdr = http_html_hdr;
-        *pkts = www_prepare_html("/spiffs/www/doorscfg.html", no_param_fields, &size);
-      }
-      else if (strcmp("/doorcfg", path) == 0) {
-        size = door_edit(hdr, pkts);
-      }
-      else if (strcmp("/netcfg", path) == 0) {
-        size = net_edit(hdr, pkts);
-      }
-      else if (strcmp("/seccfg", path) == 0) {
-        size = sec_edit(hdr, pkts);
-      }
-      else if (strcmp("/variacfg", path) == 0) {
-        size = varia_edit(hdr, pkts);
-      }
-      else if (strcmp("/testgpio", path) == 0) {
-        size = testgpio_edit(hdr, pkts);
-      }
-      else if (strcmp("/style.css", path) == 0) {
-        *hdr = http_css_hdr;
-        *pkts = www_prepare_html("/spiffs/www/style.css", NULL, &size);
-      }
-      else if (strcmp("/open", path) == 0) {
-        open_door();
-        *hdr = http_html_hdr;
-        *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
-      }
-      else if (strcmp("/close", path) == 0) {
-        close_door();
-        *hdr = http_html_hdr;
-        *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
-      }
-      else if ((strcmp("/index", path) == 0) || (strcmp("/", path) == 0)) {
-        *hdr = http_html_hdr;
-        *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
-      }
-      else if (strncmp("/favicon-", path, 9) == 0) {
-        char * fname = (char *) malloc(strlen(path) + strlen("/spiffs/www") + 5);
-        strcpy(fname, "/spiffs/www");
-        strcat(fname, path);
-        FILE *f = fopen(fname, "r");
-        if (f != NULL) {
-          fseek(f, 0L, SEEK_END);
-          size = ftell(f);
-          rewind(f);
-          send_header(http_png_hdr, size);
-          png_buffer = (char *) malloc(size);
-          fread(png_buffer, 1, size, f);
-          fclose(f);
-
-          int i = 0;
-          while (i < size) {
-            int s = size - i;
-            if (s > 512) s = 512;
-            netconn_write(theconn, &png_buffer[i], s, NETCONN_NOCOPY);
-            i += s;
-          }
+        int i = 0;
+        while (i < size) {
+          int s = size - i;
+          if (s > 512) s = 512;
+          netconn_write(theconn, &png_buffer[i], s, NETCONN_NOCOPY);
+          i += s;
         }
-        else {
-          ESP_LOGE(TAG, "Unable to find file %s.", fname);
-          *hdr = http_html_hdr_not_found;
-        }
-        free(fname);
-      }
-      else if (strcmp("/browserconfig.xml", path) == 0) {
-        *hdr = http_xml_hdr;
-        *pkts = www_prepare_html("/spiffs/www/browserconfig.xml", NULL, &size);
-      }
-      else if (strcmp("/restart", path) == 0) {
-        esp_restart();
       }
       else {
-        ESP_LOGE(TAG, "Unknown path: %s.", path);
+        ESP_LOGE(TAG, "Unable to find file %s.", fname);
         *hdr = http_html_hdr_not_found;
       }
+      free(fname);
+    }
+    else if (strcmp("/browserconfig.xml", path) == 0) {
+      *hdr = http_xml_hdr;
+      *pkts = www_prepare_html("/spiffs/www/browserconfig.xml", NULL, &size, true);
     }
     else {
-      *hdr = http_html_hdr;
-      *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size);
+      if (!is_a_valid_access(&(remote_ip.u_addr.ip4))) {
+        strcpy(message_1,  "Accès non autorisé!");
+        strcpy(severity_1, "error");
+        *hdr = http_html_hdr;
+        set_push_state();
+        *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
+        clear_push_state();
+      }
+      else if (timeout()) {
+        ESP_LOGI(TAG, "Timeout.");
+        if (last_config_access != 0) {
+          strcpy(m, "\"timeout\"");
+          strcpy(message_1,  "Temps mort!");
+          strcpy(severity_1, "error");
+        }
+        *hdr = http_html_hdr;
+        set_push_state();
+        *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
+        reset_config_access();
+        clear_push_state();
+      }
+      else {
+        update_last_config_access();
+        if (strcmp("/config", path) == 0) {
+          *hdr = http_html_hdr;
+          *pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size, true);
+        }
+        else if (strcmp("/doorscfg", path) == 0) {
+          *hdr = http_html_hdr;
+          *pkts = www_prepare_html("/spiffs/www/doorscfg.html", no_param_fields, &size, true);
+        }
+        else if (strcmp("/doorcfg", path) == 0) {
+          size = door_edit(hdr, pkts);
+        }
+        else if (strcmp("/netcfg", path) == 0) {
+          size = net_edit(hdr, pkts);
+        }
+        else if (strcmp("/seccfg", path) == 0) {
+          size = sec_edit(hdr, pkts);
+        }
+        else if (strcmp("/variacfg", path) == 0) {
+          size = varia_edit(hdr, pkts);
+        }
+        else if (strcmp("/testgpio", path) == 0) {
+          size = testgpio_edit(hdr, pkts);
+        }
+        else if (strcmp("/restart", path) == 0) {
+          *hdr  = http_restart;
+          size = http_restart_size;
+          restarting = true;
+        }
+        else {
+          ESP_LOGE(TAG, "Unknown path: %s.", path);
+          *hdr = http_html_hdr_not_found;
+        }
+      }
     }
   }
   else {
@@ -459,6 +562,11 @@ static void http_server_netconn_serve(struct netconn *conn)
           pkts++;
         }
       }
+
+      if (restarting) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+      }
     }
 
     message_1[0] = 0;
@@ -523,5 +631,11 @@ bool init_http_server()
     strcpy(door_inactive[i], door_enabled[i] ? "" : "inactive");
     strcpy(    door_name[i], doors_config.doors[i].name);
   }
+
+  reset_config_access();
+
+  push_state[0] = 0;
+  restarting    = false;
+
   return true;
 }

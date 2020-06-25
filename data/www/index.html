@@ -1,4 +1,4 @@
-<body>
+<body onload="set_session(); #{S}">
   <h1>Gestion des portes</h1>
   <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
   <hr/>
@@ -33,23 +33,37 @@
     </tbody>
   </table>
   <hr/>
-  <a onclick="check_session();" class="button button2 medium">Configuration</a><br/>
+  <a onclick="check_session();" class="button button1 medium">Configuration</a>
   <div id="ask_form" style="display: none;">
-    <form action="./config" method="post" class="form-style">
-      <div class="form-style">
-        <label for="MP">Code d'accès: </label>
-        <input type="password" maxlength="15" name="MP" id="MP" required title="Code d'accès" value="">
-        <input type="submit" value="OK" class="submit button button2 small">
+    <br/><br/>
+    <form action="./config" method="post">
+      <div>
+        <label for="MP">Code d'accès: </label><br/>
+        <input type="password" maxlength="15" name="MP" id="MP" required title="Code d'accès" value="" style="margin-top:4px;"><br/>
+        <input type="submit" value="OK" class="submit button button2 small" style="margin-top:4px;">
       </div>
     </form>
   </div>
   <script>
     function check_session() {
-      if (sessionStorage.getItem("m") == null) {
+      if ((sessionStorage.getItem("m") == null) || (sessionStorage.getItem("m") == "timeout")) {
         document.getElementById("ask_form").style.display = "block";
+        document.getElementById("MP").focus();
       }
       else {
         window.location.href = "./config";
+      }
+    }
+    function set_session() {
+      if (#{M} != null) {
+        sessionStorage.setItem("m", #{M});
+        if (sessionStorage.getItem("m") == "timeout") {
+          document.getElementById("ask_form").style.display = "block";
+          document.getElementById("MP").focus();
+        }
+      }
+      else {
+        sessionStorage.setItem("m", null);
       }
     }
   </script>

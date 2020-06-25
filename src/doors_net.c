@@ -54,6 +54,8 @@ static void ap_event_handler(void            * arg,
 
 static bool wifi_init_ap()
 {
+  esp_err_t result;
+
   tcpip_adapter_init();
 
 	//For using of static IP
@@ -91,12 +93,20 @@ static bool wifi_init_ap()
     },
   };
 
+  ESP_LOGI(TAG, "SSID................: %s", wifi_config.ap.ssid);
+  ESP_LOGI(TAG, "Password............: %s", wifi_config.ap.password);
+  ESP_LOGI(TAG, "Max connection......: %u", wifi_config.ap.max_connection);
+
   if (strlen(AP_PWD) == 0) {
     wifi_config.ap.authmode = WIFI_AUTH_OPEN;
   }
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
+  if ((result = esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config)) != ESP_OK) {
+    ESP_LOGE(TAG, "esp_wifi_set_config: %s.", esp_err_to_name(result));
+    return false;
+  }
+
   ESP_ERROR_CHECK(esp_wifi_start());
 
   ESP_LOGI(TAG, "wifi_init_ap finished. SSID:%s password:%s",

@@ -95,7 +95,7 @@ int door_update(char ** hdr, www_packet_struct ** pkts)
   int size;
 
   *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              
+  *pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, &size, true);              
 
   return size;
 }
@@ -120,7 +120,7 @@ int door_edit(char ** hdr, www_packet_struct ** pkts)
       conn_relays  = doors_config.doors[door_idx].conn_relays + 1;
 
       *hdr  = http_html_hdr;
-      *pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, &size);              
+      *pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, &size, true);              
     }
   }
   else {

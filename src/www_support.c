@@ -293,7 +293,7 @@ void retrieve_header()
   fclose(file);
 }
 
-www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields, int * size)
+www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields, int * size, bool header)
 {
   ESP_LOGI(TAG, "Preparing page %s.", filename);
 
@@ -302,7 +302,7 @@ www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields,
   packet_idx = -1;
   packet_pos = PACKET_SIZE;
 
-  retrieve_header();
+  if (header) retrieve_header();
 
   file = fopen(filename, "r");
  
@@ -348,7 +348,7 @@ www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields,
           field = field->next;
         }
         if (field == NULL) {
-          ESP_LOGE(TAG, "No field definition for %s in file %s.", id, filename);
+          ESP_LOGE(TAG, "No field definition for %s present in file %s.", id, filename);
         }
         else {
           char * str;

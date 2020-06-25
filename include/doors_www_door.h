@@ -12,7 +12,7 @@
 #endif
 
 PUBLIC int door_update(char ** hdr, www_packet_struct ** pkts);
-PUBLIC int door_edit(char ** hdr, www_packet_struct ** pkts);
+PUBLIC int   door_edit(char ** hdr, www_packet_struct ** pkts);
 
 #undef PUBLIC
 #endif
