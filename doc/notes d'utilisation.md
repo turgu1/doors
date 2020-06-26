@@ -30,9 +30,9 @@ Lorsque le led RUN est alumer, si le led ERROR est également alumé, cela signi
 
 L'interface du serveur WEB permet d'accéder à divers panneaux permettant de modifier la configuration de l'appareil. Il est nécessaire d'entrer un mot de passe pour accéder aux panneaux de configuration. Comme ce mot de passe fait également partie des paramètres configurables, le mot de passe de bypass (item BACKDOOR_PWD dans include/secure.h) est utilisable lorsque celui configuré n'est plus connu par l'utilisateur.
 
-Une fois qu'on a reçu l'accès aux différents panneaux de configuration, un délais de 15 minutes sans activité avec le serveur web aura comme conséquence d'avoir à ré-entrer le mot de passe dans le panneau principal et de reprendre l'édition des paramètres.
+Une fois qu'on a reçu l'accès aux différents panneaux de configuration, un délais de 15 minutes sans activité (temps mort) avec le serveur web aura comme conséquence d'avoir à ré-entrer le mot de passe dans le panneau principal et de reprendre l'édition des paramètres.
 
-Il ne peut y avoir qu'un seul utilisateur des panneaux de configuration. Le dernier utilisateur a avoir entré le mot de passe avec succès est celui qui a le contrôle. Il est donc possible de désactiver un utilisateur en entrant dans la configuration à partir d'un seconde session de configuration à partir d'un autre appareil (ordi, tablette, cellulaire).
+Il ne peut y avoir qu'un seul utilisateur des panneaux de configuration. Le dernier utilisateur a avoir entré le mot de passe avec succès est celui qui a le contrôle. Il n'est pas possible avec un second appareil, de prendre le contrôle de la configuration alors qu'un premier appareil est à modifier la config. Il faut attendre la période de temps mort (15 minutes), avant de pouvoir le faire.
 
 Cette capacité est rudimentaire et ne sert qu'à protéger l'accès à la configuration de manière simple.
 

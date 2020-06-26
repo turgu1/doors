@@ -68,10 +68,12 @@ void timeoutCallback(TimerHandle_t timeoutTimer)
 {
   // The timeout time has expired
   timedout = true;
+  ESP_LOGI(TAG, "Timeout reached.");
 }
 
 static void update_last_config_access()
 {
+  ESP_LOGI(TAG, "Reseting timeout.");
   if (xTimerReset(timeoutTimer, 0) != pdPASS) {
     ESP_LOGE(TAG, "Unable t reset timeout timer.");
   }
@@ -84,6 +86,7 @@ static bool is_a_valid_access(ip4_addr_t * ip)
 
 static void start_config_access(ip4_addr_t * ip)
 {
+  ESP_LOGI(TAG, "Starting config access.");
   config_ip.addr = ip->addr;
   update_last_config_access();
 }

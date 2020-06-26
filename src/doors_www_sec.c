@@ -31,10 +31,10 @@ int sec_update(char ** hdr, www_packet_struct ** pkts)
 
   if (!www_get_str("OLD",   old_pwd,   PWD_SIZE)) field = "Ancien m.de.p.";
   else {
-    if ((strcmp(old_pwd, doors_config.pwd) != 0) && 
+    if ((strcmp(old_pwd, doors_config.pwd) != 0) &&
         (strcmp(old_pwd, BACKDOOR_PWD) != 0)) field = "Ancien m.de.p.";
   }
-  if ((!www_get_str("NEW",   new_pwd,   PWD_SIZE) || (strlen(new_pwd) <= 8)) && (field == NULL))            field = "Nouveau m.de.p.";
+  if ((!www_get_str("NEW",   new_pwd,   PWD_SIZE) || (strlen(new_pwd) < 8)) && (field == NULL))            field = "Nouveau m.de.p.";
   if ((!www_get_str("VERIF", verif_pwd, PWD_SIZE) || (strcmp(new_pwd, verif_pwd) != 0)) && (field == NULL)) field = "Vérif. m.de.p.";
 
   if (field == NULL) {

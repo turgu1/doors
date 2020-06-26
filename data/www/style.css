@@ -101,3 +101,7 @@ div.alert-error {
   text-align: center;
   font-weight: bold;
 }
+
+.password {
+  -webkit-text-security: disc;
+}

@@ -3,18 +3,18 @@
   <div class="alert-#{SEVERITY_0}">#{MSG_0}</div>
   <hr/>
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
-  <form action="./sec_update" method="post" class="form-style">
+  <form action="./sec_update" method="post" class="form-style" autocomplete="off">
     <div class="form-style">
-      <label for="oldpsw">Ancien mot de passe: </label>
-      <input type="password" maxlength="15" name="OLD" id="OLD" required title="Longueur maxi: 15" value="#{OLD}">
+      <label for="OLD">Ancien Code d'accès: </label>
+      <input type="password" autocomplete="off" maxlength="15" name="OLD" id="OLD" required title="Longueur maxi: 15" value="#{OLD}">
     </div>
     <div class="form-style">
-      <label for="newpsw">Nouveau mot de passe: </label>
-      <input type="password" maxlength="15" name="NEW" id="NEW" required title="Longueur maxi: 15" value="#{NEW}">
+      <label for="NEW">Nouveau Code d'accès: </label>
+      <input type="password" autocomplete="off" maxlength="15" name="NEW" id="NEW" required title="Longueur maxi: 15" value="#{NEW}">
     </div>
     <div class="form-style">
-      <label for="checkpsw">Vérif. mot de passe: </label>
-      <input type="password" maxlength="15" name="VERIF" id="VERIF" required title="Longueur maxi: 15" value="#{VERIF}">
+      <label for="VERIF">Vérif. Code d'accès: </label>
+      <input type="password" autocomplete="off" maxlength="15" name="VERIF" id="VERIF" required title="Longueur maxi: 15" value="#{VERIF}">
     </div>
     <div class="form-style">
       <input type="submit" value="OK" class="submit button button2">
