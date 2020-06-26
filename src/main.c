@@ -202,6 +202,10 @@ void app_main(void)
   
   set_state_led_on();
   
+  vTaskStartScheduler();
+
+  while (true) ;
+
   // printf("Restarting in 500 seconds ");
   // for (int i = 500; i >= 0; i--) {
   //   printf(".");

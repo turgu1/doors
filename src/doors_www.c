@@ -25,7 +25,6 @@ static const char * TAG = "DOORS_WWW";
 // Every field list must have MSG_1, SEVERITY_1, MSG_0 and SEVERITY_0 defined.
 
 static uint8_t  door_idx;
-static uint32_t last_config_access = 0;
 
 static char   door_inactive[DOOR_COUNT][10];
 static char       door_name[DOOR_COUNT][NAME_SIZE];
@@ -62,29 +61,38 @@ www_field_struct index_fields[16] = {
   { NULL,              STR, "SEVERITY_1", severity_1      }
 };
 
-static bool timeout()
-{
-  TickType_t current_time = xTaskGetTickCount();
+static TimerHandle_t timeoutTimer = NULL;
+static volatile bool timedout = false;
 
-  return (last_config_access == 0) || 
-         ((current_time - last_config_access) > pdMS_TO_TICKS(TIMEOUT_DURATION));
+void timeoutCallback(TimerHandle_t timeoutTimer)
+{
+  // The timeout time has expired
+  timedout = true;
 }
 
 static void update_last_config_access()
 {
-  last_config_access = xTaskGetTickCount();
+  if (xTimerReset(timeoutTimer, 0) != pdPASS) {
+    ESP_LOGE(TAG, "Unable t reset timeout timer.");
+  }
 }
 
 static bool is_a_valid_access(ip4_addr_t * ip)
 {
-  return (config_ip.addr == ip->addr) && (last_config_access != 0);
+  return (config_ip.addr == ip->addr);
+}
+
+static void start_config_access(ip4_addr_t * ip)
+{
+  config_ip.addr = ip->addr;
+  update_last_config_access();
 }
 
 static void reset_config_access()
 {
   config_ip.addr = 0;
-  last_config_access = 0;
   strcpy(m, "null");
+  timedout = false;
 }
 
 static void set_push_state()
@@ -280,8 +288,7 @@ static int www_post(char ** hdr, www_packet_struct ** pkts)
               (strcmp(mp, BACKDOOR_PWD    ) == 0))) {
           strcpy(m, "\"ok\"");
           *pkts = www_prepare_html("/spiffs/www/config.html", no_param_fields, &size, true);
-          update_last_config_access();
-          config_ip = remote_ip.u_addr.ip4;
+          start_config_access(&(remote_ip.u_addr.ip4));
         }
         else {
           strcpy(message_1,  "Code d'accès non valide!");
@@ -300,13 +307,11 @@ static int www_post(char ** hdr, www_packet_struct ** pkts)
         *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
         clear_push_state();
       }
-      else if (timeout()) {
+      else if (timedout) {
         ESP_LOGI(TAG, "Timeout.");
-        if (last_config_access != 0) {
-          strcpy(m, "\"timeout\"");
-          strcpy(message_1,  "Temps mort!");
-          strcpy(severity_1, "error");
-        }
+        strcpy(m, "\"timeout\"");
+        strcpy(message_1,  "Temps mort!");
+        strcpy(severity_1, "error");
         *hdr = http_html_hdr;
         set_push_state();
         *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
@@ -398,7 +403,7 @@ int www_get(char ** hdr, www_packet_struct ** pkts)
       clear_push_state();
     }
     else if ((strcmp("/index", path) == 0) || (strcmp("/", path) == 0)) {
-      if (timeout()) {
+      if (timedout) {
         ESP_LOGI(TAG, "Timeout.");
         reset_config_access();
       }
@@ -446,13 +451,11 @@ int www_get(char ** hdr, www_packet_struct ** pkts)
         *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
         clear_push_state();
       }
-      else if (timeout()) {
+      else if (timedout) {
         ESP_LOGI(TAG, "Timeout.");
-        if (last_config_access != 0) {
-          strcpy(m, "\"timeout\"");
-          strcpy(message_1,  "Temps mort!");
-          strcpy(severity_1, "error");
-        }
+        strcpy(m, "\"timeout\"");
+        strcpy(message_1,  "Temps mort!");
+        strcpy(severity_1, "error");
         *hdr = http_html_hdr;
         set_push_state();
         *pkts = www_prepare_html("/spiffs/www/index.html", index_fields, &size, true);
@@ -619,6 +622,27 @@ bool start_http_server()
   if (result != pdTRUE) {
     ESP_LOGE(TAG, "Unable to start http server process (%d).", result);
     return false;
+  }
+
+  timeoutTimer = xTimerCreate("TimeoutTimer",             // Just a text name, not used by the kernel.
+                              (TIMEOUT_DURATION / portTICK_PERIOD_MS), // The timer period in ticks.
+                              pdFALSE,                    // The timer is a one-shot timer.
+                              0,                          // The id is not used by the callback so can take any value.
+                              timeoutCallback);           // The callback function that switches the LCD back-light off.
+  if (timeoutTimer == NULL) {
+    // The timer was not created.
+    ESP_LOGE(TAG, "Unable to create timeout timer.");
+    return false;
+  }
+  else {
+    // Start the timer.  No block time is specified, and even if one was
+    // it would be ignored because the scheduler has not yet been
+    // started.
+    if (xTimerStart(timeoutTimer, 0) != pdPASS) {
+      // The timer could not be set into the Active state.
+      ESP_LOGE(TAG, "Unable to set timeout timer as Active.");
+      return false;
+    }
   }
 
   return true;
