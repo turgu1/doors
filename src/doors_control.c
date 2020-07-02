@@ -140,7 +140,7 @@ static void relays_low_level_control_process(void * not_used)
         }
       }
       if (new_relay_open_values != relay_open_values) {
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 8; i++) {
           gpio_set_level(gpio_relay[i], new_relay_open_values & (1 << i));
         }
         gpio_set_level(gpio_latch_relay_open, 1);
@@ -150,7 +150,7 @@ static void relays_low_level_control_process(void * not_used)
         relay_open_values = new_relay_open_values;
       }
       if (new_relay_close_values != relay_close_values) {
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 8; i++) {
           gpio_set_level(gpio_relay[i], new_relay_close_values & (1 << i));
         }
         gpio_set_level(gpio_latch_relay_close, 1);
