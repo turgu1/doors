@@ -7,33 +7,33 @@
     <tbody>
       <tr class="#{ACTIVE_0}">
         <td class="label">#{NAME_0}:</td>
-        <td><a class="button button2" href="./open?door=0">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=0">Ferme</a></td>
+        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=0">Ouvre</a></td>
+        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=0">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_1}">
         <td class="label">#{NAME_1}:</td>
-        <td><a class="button button2" href="./open?door=1">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=1">Ferme</a></td>
+        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=1">Ouvre</a></td>
+        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=1">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_2}">
         <td class="label">#{NAME_2}:</td>
-        <td><a class="button button2" href="./open?door=2">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=2">Ferme</a></td>
+        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=2">Ouvre</a></td>
+        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=2">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_3}">
         <td class="label">#{NAME_3}:</td>
-        <td><a class="button button2" href="./open?door=3">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=3">Ferme</a></td>
+        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=3">Ouvre</a></td>
+        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=3">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_4}">
         <td class="label">#{NAME_4}:</td>
-        <td><a class="button button2" href="./open?door=4">Ouvre</a></td>
-        <td><a class="button button3" href="./close?door=4">Ferme</a></td>
+        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=4">Ouvre</a></td>
+        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=4">Ferme</a></td>
       </tr>
     </tbody>
   </table>
   <hr/>
-  <a onclick="check_session();" class="button button1 medium">Configuration</a>
+  <a onclick="check_session();" ontouchend="check_session();" class="button button1 medium">Configuration</a>
   <div id="ask_form" style="display: none;">
     <br/><br/>
     <form action="./config" method="post">
@@ -65,6 +65,10 @@
       else {
         sessionStorage.removeItem("m");
       }
+    }
+    function lien(e) {
+      window.open(e.href, "_self");
+      return false;
     }
   </script>
 </body>
