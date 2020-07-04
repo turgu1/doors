@@ -17,7 +17,7 @@ static bool    active_low;
 static int     duration;
 static char    onclick[40];
 static char    return_url[12];
-static char    return_label[12];
+static char    return_label[14];
 
 static www_field_struct testgpio_fields[10] = {
   { &testgpio_fields[1], BYTE, "GPIO",       &gpio         },
