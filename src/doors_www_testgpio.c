@@ -69,7 +69,7 @@ int testgpio_update(char ** hdr, www_packet_struct ** pkts)
   }
 
   strcpy(return_url,   "./restart");
-  strcpy(return_label, "Redémarrage");
+  strcpy(return_label, "Redemarrage");
   strcpy(onclick,      "onclick=\"return confirmation()\"");
 
   int size;
