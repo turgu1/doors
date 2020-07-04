@@ -37,6 +37,12 @@
   </form>
 
   <hr/>
-  <a class="button button1" type="button button2" href="./doorscfg">Retour</a>
+  <a class="button button1" onclick="lien(this);" ontouchend="lien(this);" type="button button2" href="./doorscfg">Retour</a>
+  <script>
+    function lien(e) {
+      window.open(e.href, "_self");
+      return false;
+    }
+  </script>
 </body>
 </html>

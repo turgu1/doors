@@ -4,13 +4,19 @@
   <hr/>
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
   <div class="form-body">
-    <div class="form-style"><a class="button button2 align" href="./doorcfg?door=0">Porte 1</a></div>
-    <div class="form-style"><a class="button button2 align" href="./doorcfg?door=1">Porte 2</a></div>
-    <div class="form-style"><a class="button button2 align" href="./doorcfg?door=2">Porte 3</a></div>
-    <div class="form-style"><a class="button button2 align" href="./doorcfg?door=3">Porte 4</a></div>
-    <div class="form-style"><a class="button button2 align" href="./doorcfg?door=4">Porte 5</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./doorcfg?door=0">Porte 1</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./doorcfg?door=1">Porte 2</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./doorcfg?door=2">Porte 3</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./doorcfg?door=3">Porte 4</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./doorcfg?door=4">Porte 5</a></div>
   </div>
   <hr/>
-  <a class="button button1" href="./config">Retour</a>
+  <a class="button button1" onclick="lien(this);" ontouchend="lien(this);" href="./config">Retour</a>
+  <script>
+    function lien(e) {
+      window.open(e.href, "_self");
+      return false;
+    }
+  </script>
 </body>
 </html>
