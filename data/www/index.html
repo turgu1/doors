@@ -7,28 +7,28 @@
     <tbody>
       <tr class="#{ACTIVE_0}">
         <td class="label">#{NAME_0}:</td>
-        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=0">Ouvre</a></td>
-        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=0">Ferme</a></td>
+        <td><a class="button button2 std" href="./open?door=0">Ouvre</a></td>
+        <td><a class="button button3 std" href="./close?door=0">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_1}">
         <td class="label">#{NAME_1}:</td>
-        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=1">Ouvre</a></td>
-        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=1">Ferme</a></td>
+        <td><a class="button button2 std" href="./open?door=1">Ouvre</a></td>
+        <td><a class="button button3 std" href="./close?door=1">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_2}">
         <td class="label">#{NAME_2}:</td>
-        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=2">Ouvre</a></td>
-        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=2">Ferme</a></td>
+        <td><a class="button button2 std" href="./open?door=2">Ouvre</a></td>
+        <td><a class="button button3 std" href="./close?door=2">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_3}">
         <td class="label">#{NAME_3}:</td>
-        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=3">Ouvre</a></td>
-        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=3">Ferme</a></td>
+        <td><a class="button button2 std" href="./open?door=3">Ouvre</a></td>
+        <td><a class="button button3 std" href="./close?door=3">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_4}">
         <td class="label">#{NAME_4}:</td>
-        <td><a class="button button2" onclick="lien(this);" ontouchend="lien(this);" href="./open?door=4">Ouvre</a></td>
-        <td><a class="button button3" onclick="lien(this);" ontouchend="lien(this);" href="./close?door=4">Ferme</a></td>
+        <td><a class="button button2 std" href="./open?door=4">Ouvre</a></td>
+        <td><a class="button button3 std" href="./close?door=4">Ferme</a></td>
       </tr>
     </tbody>
   </table>
@@ -66,10 +66,15 @@
         sessionStorage.removeItem("m");
       }
     }
-    function lien(e) {
-      window.open(e.href, "_self");
-      return false;
+    function lien() {
+      window.location.href = this.href;
+      return true;
     }
+
+    document.querySelectorAll(".std").forEach(function (item) {
+      item.addEventListener('click', lien);
+      item.addEventListener('touchend', lien);
+    });
   </script>
 </body>
 </html>
