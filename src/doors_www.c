@@ -167,6 +167,7 @@ static void reset_config_access(httpd_req_t *req)
     ((session_struct *) req->sess_ctx)->authorized = false;
     ((session_struct *) req->sess_ctx)->timedout = false;
   }
+  strcpy(m, "null");
 }
 
 static void set_push_state()
@@ -1037,6 +1038,7 @@ bool init_http_server()
     strcpy(    door_name[i], doors_config.doors[i].name);
   }
 
+  strcpy(m, "null");
   push_state[0] = 0;
   restarting    = false;
 
