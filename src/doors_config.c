@@ -113,8 +113,8 @@ static void doors_init_config(struct config_struct * cfg)
 
   // Network
 
-  strcpy(cfg->network.ssid,   "boo"        /*"wifi ssid"*/);
-  strcpy(cfg->network.pwd,    "cancancan"  /*"wifi pwd"*/);
+  strcpy(cfg->network.ssid,   "wifi ssid");
+  strcpy(cfg->network.pwd,    "wifi pwd" );
 
   strcpy(cfg->network.ip,     "");
   strcpy(cfg->network.mask,   "255.255.255.0");
@@ -125,7 +125,7 @@ static void doors_init_config(struct config_struct * cfg)
   // Doors
 
   for (int i = 0; i < DOOR_COUNT; i++) {
-    cfg->doors[i].enabled           = i == 0; /* false; */
+    cfg->doors[i].enabled           = false;
     strcpy(cfg->doors[i].name, "Porte ");
     cfg->doors[i].name[6]           = '1' + i;
     cfg->doors[i].name[7]           = 0;

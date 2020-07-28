@@ -32,7 +32,7 @@ L'interface du serveur WEB permet d'accéder à divers panneaux permettant de mo
 
 Une fois qu'on a reçu l'accès aux différents panneaux de configuration, un délais de 15 minutes sans activité (temps mort) avec le serveur web aura comme conséquence d'avoir à ré-entrer le mot de passe dans le panneau principal et de reprendre l'édition des paramètres.
 
-Il ne peut y avoir qu'un seul utilisateur des panneaux de configuration. Le dernier utilisateur a avoir entré le mot de passe avec succès est celui qui a le contrôle. Il n'est pas possible avec un second appareil, de prendre le contrôle de la configuration alors qu'un premier appareil est à modifier la config. Il faut attendre la période de temps mort (15 minutes), avant de pouvoir le faire.
+Il peut y avoir plusieurs utilisateur dans les panneaux de configuration. Si plus d'un utilisateur effectue des modifications au même panneau de config, c'est le dernière modification dans le temps qui sera sauvegardée.
 
 Cette capacité est rudimentaire et ne sert qu'à protéger l'accès à la configuration de manière simple.
 
