@@ -20,7 +20,7 @@ www_field_struct varia_fields[5] = {
   { NULL,             STR,   "SEVERITY_1", severity_1           }
 };
 
-int varia_update(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * varia_update()
 {
   char * field = NULL;
 
@@ -47,23 +47,13 @@ int varia_update(char ** hdr, www_packet_struct ** pkts)
     strcat(message_1,  field);
     strcpy(severity_1, "error");
   }
-  
-  int size;
 
-  *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/variacfg.html", varia_fields, &size, true);         
-  
-  return size;
+  return www_prepare_html("/spiffs/www/variacfg.html", varia_fields, true);         
 }
 
-int varia_edit(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * varia_edit()
 {
-  int size;
-
   relay_abort_length  = doors_config.relay_abort_length;
 
-  *hdr  = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/variacfg.html", varia_fields, &size, true);
-
-  return size;
+  return www_prepare_html("/spiffs/www/variacfg.html", varia_fields, true);
 }

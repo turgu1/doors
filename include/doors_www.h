@@ -69,7 +69,7 @@ PUBLIC char * http_restart
     "<meta http-equiv=\"refresh\" content=\"30; URL='./index'\" />"
   "</head><body>"
   "<p>Redémarrage... attendre 30 secondes...</p>"
-  "<body></html>"
+  "</body></html>"
 #endif
 ;
 

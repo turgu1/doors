@@ -11,7 +11,7 @@
   #define PUBLIC extern
 #endif
 
-#define MAX_PACKET_COUNT  20
+#define MAX_PACKET_COUNT  40
 #define PACKET_SIZE      512
 
 typedef enum { INT, SHORT, BYTE, BOOL, STR } www_field_type;
@@ -28,12 +28,14 @@ typedef struct pkt_struct {
   char * buff;
 } www_packet_struct;
 
+PUBLIC www_packet_struct * get_raw_file(char * filename);
+
 PUBLIC www_packet_struct * www_prepare_html(char             * filename, 
                                             www_field_struct * fields,
-                                            int              * size,
                                             bool               header);
 PUBLIC void init_www_support();
 
+PUBLIC void www_clear_params();
 PUBLIC void www_extract_params(char * str, bool get);
 
 PUBLIC bool   www_get_int(char * id, int      * val);

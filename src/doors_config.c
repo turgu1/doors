@@ -113,8 +113,8 @@ static void doors_init_config(struct config_struct * cfg)
 
   // Network
 
-  strcpy(cfg->network.ssid,   "toto" /*"wifi ssid"*/);
-  strcpy(cfg->network.pwd,    "snoopy1967" /*"wifi pwd"*/);
+  strcpy(cfg->network.ssid,   "boo"        /*"wifi ssid"*/);
+  strcpy(cfg->network.pwd,    "cancancan"  /*"wifi pwd"*/);
 
   strcpy(cfg->network.ip,     "");
   strcpy(cfg->network.mask,   "255.255.255.0");

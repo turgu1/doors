@@ -48,7 +48,7 @@ static www_field_struct net_fields[19] = {
   { NULL,            STR,  "SEVERITY_1", severity_1                 }
 };
 
-int net_update(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * net_update()
 {
   char * field = NULL;
 
@@ -105,15 +105,10 @@ int net_update(char ** hdr, www_packet_struct ** pkts)
     strcpy(severity_1, "error");
   }          
 
-  int size;
-
-  *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/netcfg.html", net_fields, &size, true);
-
-  return size;
+  return www_prepare_html("/spiffs/www/netcfg.html", net_fields, true);
 }
 
-int net_edit(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * net_edit()
 {
   strcpy(wifi_ssid,  doors_config.network.ssid);
   strcpy(wifi_pwd,   doors_config.network.pwd);
@@ -124,10 +119,5 @@ int net_edit(char ** hdr, www_packet_struct ** pkts)
   
   www_port = doors_config.network.www_port;
 
-  int size;
-
-  *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/netcfg.html", net_fields, &size, true);
-
-  return size;
+  return www_prepare_html("/spiffs/www/netcfg.html", net_fields, true);
 }

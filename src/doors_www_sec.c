@@ -25,7 +25,7 @@ www_field_struct sec_fields[7] = {
   { NULL,           STR, "SEVERITY_1", severity_1 }
 };
 
-int sec_update(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * sec_update()
 {
   char * field = NULL;
 
@@ -60,24 +60,14 @@ int sec_update(char ** hdr, www_packet_struct ** pkts)
     strcpy(severity_1, "error");
   }
   
-  int size;
-
-  *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/seccfg.html", sec_fields, &size, true);         
-  
-  return size;
+  return www_prepare_html("/spiffs/www/seccfg.html", sec_fields, true); 
 }
 
-int sec_edit(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * sec_edit()
 {
-  int size;
-
   new_pwd[0]   = 0;
   old_pwd[0]   = 0;
   verif_pwd[0] = 0;
 
-  *hdr  = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/seccfg.html", sec_fields, &size, true);
-
-  return size;
+  return www_prepare_html("/spiffs/www/seccfg.html", sec_fields, true);
 }

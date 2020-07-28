@@ -11,8 +11,8 @@
   #define PUBLIC extern
 #endif
 
-PUBLIC int door_update(char ** hdr, www_packet_struct ** pkts);
-PUBLIC int   door_edit(char ** hdr, www_packet_struct ** pkts);
+PUBLIC www_packet_struct * door_update();
+PUBLIC www_packet_struct *   door_edit();
 
 #undef PUBLIC
 #endif

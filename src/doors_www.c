@@ -14,6 +14,7 @@
 
 #include "driver/gpio.h"
 #include "tcpip_adapter.h"
+#include "esp_http_server.h"
 
 #include <lwip/sockets.h>
 #include <lwip/sys.h>
@@ -21,6 +22,11 @@
 #include <lwip/netdb.h>
 
 static const char * TAG = "DOORS_WWW";
+#define CHECK(a, str, goto_tag, ...)                                           \
+  if (!(a)) {                                                                  \
+    ESP_LOGE(TAG, "%s(%d): " str, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+    goto goto_tag;                                                             \
+  }
 
 // Every field list must have MSG_1, SEVERITY_1, MSG_0 and SEVERITY_0 defined.
 
@@ -31,7 +37,16 @@ static char       door_name[DOOR_COUNT][NAME_SIZE];
 static bool    door_enabled[DOOR_COUNT];
 static char               m[12];
 static char      push_state[80];
+
+#if 0
 static ip4_addr_t config_ip;
+#endif
+
+typedef struct {
+  TickType_t last_tick_time;
+  bool authorized;
+  bool timedout;
+} session_struct;
 
 static bool restarting;
 
@@ -61,6 +76,32 @@ www_field_struct index_fields[16] = {
   { NULL,              STR, "SEVERITY_1", severity_1      }
 };
 
+#define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0)
+
+/* Set HTTP response content type according to file extension */
+static esp_err_t set_content_type(httpd_req_t *req, const char *filepath, bool *is_html)
+{
+  const char *type = "text/plain";
+  *is_html = false;
+  if (CHECK_FILE_EXTENSION(filepath, ".html")) {
+    type = "text/html";
+    *is_html = true;
+  } else if (CHECK_FILE_EXTENSION(filepath, ".js")) {
+    type = "application/javascript";
+  } else if (CHECK_FILE_EXTENSION(filepath, ".css")) {
+    type = "text/css";
+  } else if (CHECK_FILE_EXTENSION(filepath, ".png")) {
+    type = "image/png";
+  } else if (CHECK_FILE_EXTENSION(filepath, ".ico")) {
+    type = "image/x-icon";
+  } else if (CHECK_FILE_EXTENSION(filepath, ".svg")) {
+    type = "text/xml";
+  }
+  ESP_LOGI(TAG, "File type: %s.", type);
+  return httpd_resp_set_type(req, type);
+}
+
+#if 0
 static TimerHandle_t timeoutTimer = NULL;
 static volatile bool timedout = false;
 
@@ -70,37 +111,67 @@ void timeoutCallback(TimerHandle_t timeoutTimer)
   timedout = true;
   ESP_LOGI(TAG, "Timeout reached.");
 }
+#endif
 
-static void update_last_config_access()
+static bool timedout(httpd_req_t * req)
 {
-  ESP_LOGI(TAG, "Reseting timeout.");
-  if (xTimerReset(timeoutTimer, 0) != pdPASS) {
-    ESP_LOGE(TAG, "Unable t reset timeout timer.");
+  return (req->sess_ctx == NULL) ? false : ((session_struct *) req->sess_ctx)->timedout;
+}
+
+static void check_timeout(httpd_req_t * req)
+{
+  if (req->sess_ctx && ((session_struct *) req->sess_ctx)->authorized) {
+    TickType_t elapse = xTaskGetTickCount() - ((session_struct *) req->sess_ctx)->last_tick_time;
+
+    if (elapse > pdMS_TO_TICKS(TIMEOUT_DURATION)) {
+      ESP_LOGI(TAG, "Priviledged access timed out.");
+      ((session_struct *) req->sess_ctx)->timedout = true;
+      ((session_struct *) req->sess_ctx)->authorized = false;
+    }
   }
 }
 
-static bool is_a_valid_access(ip4_addr_t * ip)
+static void update_last_access(httpd_req_t * req)
 {
-  return (config_ip.addr == ip->addr);
+  if (req->sess_ctx) {
+    ESP_LOGI(TAG, "Reseting timeout.");
+    if (((session_struct *) req->sess_ctx)->authorized) {
+      ((session_struct *) req->sess_ctx)->last_tick_time = xTaskGetTickCount();
+    }
+  }
 }
 
-static void start_config_access(ip4_addr_t * ip)
+static bool is_a_valid_access(httpd_req_t *req)
+{
+  return (req->sess_ctx == NULL) ? false : ((session_struct *) req->sess_ctx)->authorized;
+}
+
+static void start_config_access(httpd_req_t *req)
 {
   ESP_LOGI(TAG, "Starting config access.");
-  config_ip.addr = ip->addr;
-  update_last_config_access();
+
+  if (req->sess_ctx == NULL) {
+    session_struct * session = (session_struct *) malloc(sizeof(session_struct));
+    req->sess_ctx = session;
+  }
+  ((session_struct *) req->sess_ctx)->authorized = true;
+  ((session_struct *) req->sess_ctx)->timedout = false;
+
+  update_last_access(req);
 }
 
-static void reset_config_access()
+static void reset_config_access(httpd_req_t *req)
 {
-  config_ip.addr = 0;
-  strcpy(m, "null");
-  timedout = false;
+  if (req->sess_ctx) {
+    ESP_LOGI(TAG, "Reseting config access.");
+    ((session_struct *) req->sess_ctx)->authorized = false;
+    ((session_struct *) req->sess_ctx)->timedout = false;
+  }
 }
 
 static void set_push_state()
 {
-  strcpy(push_state, "history.pushState({id:'homepage'},'Gestion des portes','./index');");
+  strlcpy(push_state, "history.pushState({id:'homepage'},'Gestion des portes','./index');", 80);
 }
 
 static void clear_push_state()
@@ -158,7 +229,7 @@ static void close_door()
       }
     }
     else {
-      ESP_LOGE(TAG, "Door number not valid: %d", door_idx);
+      ESP_LOGE(TAG, "Door number not valid: %d.", door_idx);
       strcpy(message_1, "Porte non valide.");
       strcpy(severity_1, "error");
     }
@@ -170,6 +241,7 @@ static void close_door()
   }
 }
 
+#if 0
 static struct netconn * theconn;
 static struct netbuf  * inbuf;
 static char           * buf;
@@ -371,7 +443,7 @@ int www_get(char ** hdr, www_packet_struct ** pkts)
   // Host: 192.168.1.222
   // Connection: Keep-Alive
 
-  line_end = strchr(buf, '\n');
+  line_end = strnstr(buf, "\n", buflen);
 
   if (line_end != NULL) {
     //Extract the path from HTTP GET request
@@ -518,7 +590,278 @@ int www_get(char ** hdr, www_packet_struct ** pkts)
 
   return size;  
 }
+#endif
 
+// ----- POST Handler ---------------------------------------------------------
+
+static esp_err_t post_handler(httpd_req_t *req)
+{
+  static char filepath[256];
+  www_packet_struct * pkts = NULL;
+  www_field_struct  * flds = NULL;
+  bool is_html = false;
+  char * query = NULL;
+
+  ESP_LOGI(TAG, "POST Handler start, URI: %s", req->uri);
+
+  check_timeout(req);
+
+  int query_size = req->content_len;
+  if (query_size > 0) {
+    query = (char *) malloc(query_size + 1);
+    int curr_len = 0;
+    while (curr_len < query_size) {
+      int received = httpd_req_recv(req, query + curr_len, query_size);
+      if (received <= 0) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to receive post data.");
+        ESP_LOGE(TAG, "Failed to receive post data.");
+        free(query);
+        return ESP_FAIL;
+      }
+      curr_len += received;
+    }
+    query[query_size] = '\0';
+    www_extract_params(query, false);
+  }
+  else {
+    www_clear_params();
+  }
+
+  strlcpy(filepath, "/spiffs/www", sizeof(filepath));
+
+  if (strncmp(req->uri, "/config", 7) == 0) {
+    static char mp[PWD_SIZE];
+    if (www_get_str("MP", mp, PWD_SIZE) && 
+        ((strcmp(mp, doors_config.pwd) == 0) || 
+          (strcmp(mp, BACKDOOR_PWD    ) == 0))) {
+      strcpy(m, "\"ok\"");
+      strlcat(filepath, "/config.html", sizeof(filepath));
+      flds = no_param_fields;
+      start_config_access(req);
+    }
+    else {
+      strcpy(message_1,  "Code d'accès non valide!");
+      strcpy(severity_1, "error");
+      strcpy(m, "null");
+      strlcat(filepath, "/index.html", sizeof(filepath));
+      flds = index_fields;
+    }
+  }
+  else if (timedout(req)) {
+    ESP_LOGI(TAG, "Timeout.");
+    strcpy(m, "\"timeout\"");
+    strcpy(message_1,  "Temps mort!");
+    strcpy(severity_1, "error");
+    strlcat(filepath, "/index.html", sizeof(filepath));
+    flds = index_fields;
+    reset_config_access(req);
+  }
+  else if (!is_a_valid_access(req)) {
+    strcpy(message_1,  "Accès non autorisé!");
+    strcpy(severity_1, "error");
+    strlcat(filepath, "/index.html", sizeof(filepath));
+    flds = index_fields;
+  }
+  else {
+    if      (strncmp(req->uri, "/door_update"    , 12) == 0) pkts =     door_update();
+    else if (strncmp(req->uri, "/sec_update"     , 11) == 0) pkts =      sec_update();
+    else if (strncmp(req->uri, "/varia_update"   , 13) == 0) pkts =    varia_update();
+    else if (strncmp(req->uri, "/net_update"     , 11) == 0) pkts =      net_update();
+    else if (strncmp(req->uri, "/testgpio_update", 16) == 0) pkts = testgpio_update();
+    else {
+      ESP_LOGE(TAG, "Unknown URI: %s.", req->uri);
+    }
+  }
+
+  update_last_access(req);
+
+  set_content_type(req, filepath, &is_html);
+
+  if (is_html && (pkts == NULL)) {
+    if (flds == index_fields) {
+      set_push_state();
+      pkts = www_prepare_html(filepath, flds, is_html);
+      clear_push_state();
+    }
+    else {
+      pkts = www_prepare_html(filepath, flds, is_html);
+    }
+
+    message_1[0] = 0;
+    strcpy(severity_1, "none");
+  }
+
+  // Send content
+  if (pkts != NULL) {
+    int i = 0;
+    while ((i < MAX_PACKET_COUNT) && (pkts->size > 0)) {
+      if (httpd_resp_send_chunk(req, pkts->buff, pkts->size) != ESP_OK) {
+        ESP_LOGE(TAG, "File sending failed!");
+        httpd_resp_sendstr_chunk(req, NULL);
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file.");
+        if (query != NULL) free(query);
+        return ESP_FAIL;
+      }
+      i++;
+      pkts++;
+    }
+    httpd_resp_send_chunk(req, NULL, 0);
+  }
+  else {
+    httpd_resp_send_404(req);
+  }
+
+  ESP_LOGI(TAG, "POST Handler completed.");
+
+  if (query != NULL) free(query);
+  return ESP_OK;
+}
+
+// ----- GET Handler ----------------------------------------------------------
+
+static esp_err_t get_handler(httpd_req_t *req)
+{
+  static char filepath[256];
+  www_packet_struct * pkts = NULL;
+  www_field_struct  * flds = NULL;
+  bool is_html = false;
+  char * query = NULL;
+
+  ESP_LOGI(TAG, "GET Handler start, URI: %s", req->uri);
+
+  check_timeout(req);
+  
+  doors_validate_config();
+  
+  size_t query_size = httpd_req_get_url_query_len(req);
+  if (query_size > 0) {
+    query = (char *) malloc(query_size + 1);
+    httpd_req_get_url_query_str(req, query, query_size + 1);
+    www_extract_params(query, false);
+  }
+  else {
+    www_clear_params();
+  }
+
+  strlcpy(filepath, "/spiffs/www", sizeof(filepath));
+  if ((req->uri[strlen(req->uri) - 1] == '/') || (strncmp(req->uri, "/index", 6) == 0)) {
+    strlcat(filepath, "/index.html", sizeof(filepath));
+  } else if (strncmp(req->uri, "/open", 5) == 0) {
+    open_door();
+    strlcat(filepath, "/index.html", sizeof(filepath));
+  } else if (strncmp(req->uri, "/close", 6) == 0) {
+    close_door();
+    strlcat(filepath, "/index.html", sizeof(filepath));
+  } else if ((strncmp(req->uri, "/favicon-",           9) == 0) ||
+             (strncmp(req->uri, "/browserconfig.xml", 18) == 0) ||
+             (strncmp(req->uri, "/style.css",         10) == 0)) {
+    strlcat(filepath, req->uri, sizeof(filepath));
+  }
+  else if (timedout(req)) {
+    ESP_LOGI(TAG, "Timeout.");
+    strcpy(m, "\"timeout\"");
+    strcpy(message_1,  "Temps mort!");
+    strcpy(severity_1, "error");
+    strlcat(filepath, "/index.html", sizeof(filepath));
+    flds = index_fields;
+    reset_config_access(req);
+  }
+  else if (!is_a_valid_access(req)) {
+    strcpy(message_1,  "Accès non autorisé!");
+    strcpy(severity_1, "error");
+    strlcat(filepath, "/index.html", sizeof(filepath));
+    flds = index_fields;
+  }
+  else {
+    if (strcmp(req->uri, "/config") == 0) {
+      strlcat(filepath, "/config.html", sizeof(filepath));
+      flds = no_param_fields;
+    }
+    else if (strcmp(req->uri, "/doorscfg") == 0) {
+      strlcat(filepath, "/doorscfg.html", sizeof(filepath));
+      flds = no_param_fields;
+    }
+    else if (strcmp(req->uri, "/doorcfg") == 0) {
+      pkts = door_edit();
+    }
+    else if (strcmp(req->uri, "/netcfg") == 0) {
+      pkts = net_edit();
+    }
+    else if (strcmp(req->uri, "/seccfg") == 0) {
+      pkts = sec_edit();
+    }
+    else if (strcmp(req->uri, "/variacfg") == 0) {
+      pkts = varia_edit();
+    }
+    else if (strcmp(req->uri, "/testgpio") == 0) {
+      pkts = testgpio_edit();
+    }
+    else if (strcmp(req->uri, "/restart") == 0) {
+      strlcat(filepath, "/restart.html", sizeof(filepath));
+      restarting = true;
+    }
+    else {
+      ESP_LOGE(TAG, "Unknown URI: %s.", req->uri);
+    }
+  }
+
+  if (strncmp(&filepath[11], "/index", 6) == 0) {
+    flds = index_fields;
+  }
+
+  update_last_access(req);
+
+  set_content_type(req, filepath, &is_html);
+
+  if (is_html && (pkts == NULL)) {
+    if (flds == index_fields) {
+      set_push_state();
+      pkts = www_prepare_html(filepath, flds, is_html);
+      clear_push_state();
+    }
+    else {
+      pkts = www_prepare_html(filepath, flds, is_html);
+    }
+
+    message_1[0] = 0;
+    strcpy(severity_1, "none");
+  }
+  else if (pkts == NULL) {
+    pkts = get_raw_file(filepath);
+  }
+    
+  // Send content
+  if (pkts != NULL) {
+    int i = 0;
+    while ((i < MAX_PACKET_COUNT) && (pkts->size > 0)) {
+      if (httpd_resp_send_chunk(req, pkts->buff, pkts->size) != ESP_OK) {
+        ESP_LOGE(TAG, "File sending failed!");
+        httpd_resp_sendstr_chunk(req, NULL);
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file.");
+        if (query != NULL) free(query);
+        return ESP_FAIL;
+      }
+      i++;
+      pkts++;
+    }
+    httpd_resp_send_chunk(req, NULL, 0);
+  }
+  else {
+    httpd_resp_send_404(req);
+  }
+
+  ESP_LOGI(TAG, "GET Handler completed.");
+
+  if (restarting) {
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    esp_restart();
+  }
+
+  if (query != NULL) free(query);
+  return ESP_OK;
+}
+
+#if 0
 static void http_server_netconn_serve(struct netconn *conn)
 {
   // Read the data from the port, blocking if nothing yet there.
@@ -650,6 +993,41 @@ bool start_http_server()
 
   return true;
 }
+#endif
+
+bool start_http_server()
+{
+  httpd_handle_t server = NULL;
+  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+  config.uri_match_fn = httpd_uri_match_wildcard;
+  config.core_id = 0;
+
+  ESP_LOGI(TAG, "Starting HTTP Server");
+  CHECK(httpd_start(&server, &config) == ESP_OK, "Start server failed", err);
+
+  /* GET URI handler */
+  httpd_uri_t get_uri = {
+      .uri = "/*",
+      .method = HTTP_GET,
+      .handler = get_handler,
+      .user_ctx = NULL
+  };
+  httpd_register_uri_handler(server, &get_uri);
+
+  /* POST URI handler */
+  httpd_uri_t post_uri = {
+      .uri = "/*",
+      .method = HTTP_POST,
+      .handler = post_handler,
+      .user_ctx = NULL
+  };
+  httpd_register_uri_handler(server, &post_uri);
+
+  return true;
+
+err:
+  return false;
+}
 
 bool init_http_server()
 {
@@ -658,8 +1036,6 @@ bool init_http_server()
     strcpy(door_inactive[i], door_enabled[i] ? "" : "inactive");
     strcpy(    door_name[i], doors_config.doors[i].name);
   }
-
-  reset_config_access();
 
   push_state[0] = 0;
   restarting    = false;

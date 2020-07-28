@@ -33,7 +33,7 @@ static www_field_struct door_fields[12] = {
   { NULL,             STR,  "SEVERITY_1", severity_1   }
 };
 
-int door_update(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * door_update()
 {
   char * field = NULL;
 
@@ -91,17 +91,12 @@ int door_update(char ** hdr, www_packet_struct ** pkts)
     door_nbr = door_idx + 1;
   }
 
-  int size;
-
-  *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, &size, true);              
-
-  return size;
+  return www_prepare_html("/spiffs/www/doorcfg.html", door_fields, true);              
 }
 
-int door_edit(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * door_edit()
 {
-  int size = 0;
+  www_packet_struct * pkts = NULL;
 
   if (www_get_byte("door", &door_idx)) {
     door_nbr = door_idx + 1;
@@ -118,13 +113,12 @@ int door_edit(char ** hdr, www_packet_struct ** pkts)
       conn_buttons = doors_config.doors[door_idx].conn_buttons + 1;
       conn_relays  = doors_config.doors[door_idx].conn_relays + 1;
 
-      *hdr  = http_html_hdr;
-      *pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, &size, true);              
+      pkts = www_prepare_html("/spiffs/www/doorcfg.html", door_fields, true);              
     }
   }
   else {
     ESP_LOGE(TAG, "Param unknown: door.");
   }
 
-  return size; 
+  return pkts; 
 }

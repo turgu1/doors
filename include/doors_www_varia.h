@@ -11,8 +11,8 @@
   #define PUBLIC extern
 #endif
 
-PUBLIC int varia_update(char ** hdr, www_packet_struct ** pkts);
-PUBLIC int   varia_edit(char ** hdr, www_packet_struct ** pkts);
+PUBLIC www_packet_struct * varia_update();
+PUBLIC www_packet_struct *   varia_edit();
 
 #undef PUBLIC
 #endif

@@ -32,7 +32,7 @@ static www_field_struct testgpio_fields[10] = {
   { NULL,                STR,  "SEVERITY_1",  severity_1   }
 };
 
-int testgpio_update(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * testgpio_update()
 {
   char * field = NULL;
 
@@ -72,18 +72,11 @@ int testgpio_update(char ** hdr, www_packet_struct ** pkts)
   strcpy(return_label, "Redemarrage");
   strcpy(onclick,      "onclick=\"return confirmation()\"");
 
-  int size;
-
-  *hdr = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size, true);         
-  
-  return size;
+  return www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, true);         
 }
 
-int testgpio_edit(char ** hdr, www_packet_struct ** pkts)
+www_packet_struct * testgpio_edit()
 {
-  int size;
-
   strcpy(return_url,   "./config");
   strcpy(return_label, "Retour");
   onclick[0] = 0;
@@ -94,8 +87,5 @@ int testgpio_edit(char ** hdr, www_packet_struct ** pkts)
     duration = 1000;
   }
 
-  *hdr  = http_html_hdr;
-  *pkts = www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, &size, true);
-
-  return size;
+  return www_prepare_html("/spiffs/www/testgpio.html", testgpio_fields, true);
 }

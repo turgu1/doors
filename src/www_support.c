@@ -49,6 +49,11 @@ static char hex(char ch)
   return 10 + (ch - 'A');
 }
 
+void www_clear_params()
+{
+  param_count = 0;
+}
+
 // Extract parameters from url string. Parameters are separated from the
 // server location/command selection part of the url with character '?'.
 // Every parameter is separated from each other with character '&'.
@@ -293,7 +298,37 @@ void retrieve_header()
   fclose(file);
 }
 
-www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields, int * size, bool header)
+www_packet_struct * get_raw_file(char * filename)
+{
+  file = fopen(filename, "rb");
+  www_packet_struct * pkts = NULL;
+
+  ESP_LOGI(TAG, "Preparing raw file %s.", filename);
+
+  if (file != NULL) {
+    fseek(file, 0L, SEEK_END);
+    file_size = ftell(file);
+    rewind(file);
+
+    free_packets();
+    packet_idx = -1;
+    packet_pos = PACKET_SIZE;
+    
+    file_pos = buffer_size = buffer_pos = 0;
+
+    while (file_pos < file_size) put_char(get_char());
+
+    fclose(file);
+    pkts = packets;
+  }
+  else {
+    ESP_LOGE(TAG, "Failed to open file : %s", filename);
+  }
+
+  return pkts;
+}
+
+www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields, bool header)
 {
   ESP_LOGI(TAG, "Preparing page %s.", filename);
 
@@ -384,14 +419,6 @@ www_packet_struct * www_prepare_html(char * filename, www_field_struct * fields,
       put_char(ch);
     }
   }
-
-  pkts = packets;
-  int siz = 0;
-  while (pkts->size > 0) {
-    siz += pkts->size;
-    pkts++;
-  }
-  *size = siz;
 
   pkts = packets;
 
