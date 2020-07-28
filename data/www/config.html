@@ -4,21 +4,17 @@
   <hr/>
   <div class="alert-#{SEVERITY_1}">#{MSG_1}</div>
   <div class="form-body">
-    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./netcfg">Réseau</a></div>
-    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./seccfg">Sécurité</a></div>
-    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./doorscfg">Portes</a></div>
-    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./variacfg">Varia</a></div>
-    <div class="form-style"><a class="button button2 align" onclick="lien(this);" ontouchend="lien(this);" href="./testgpio">Essais GPIO</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="window.open('./netcfg','_self');return false;">Réseau</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="window.open('./seccfg','_self');return false;">Sécurité</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="window.open('./doorscfg','_self');return false;">Portes</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="window.open('./variacfg','_self');return false;">Varia</a></div>
+    <div class="form-style"><a class="button button2 align" onclick="window.open('./testgpio','_self');return false;">Essais GPIO</a></div>
     <div class="form-style"><a class="button button2 align" onclick="return confirmation();" href="./restart">Redémarrer</a></div>
   </div>
   <hr/>
-  <a class="button button1" onclick="lien(this);" ontouchend="lien(this);" href="./index">Retour</a>
+  <a class="button button1" onclick="window.open('./index','_self');return false;">Retour</a>
   <script>
     function confirmation() { return confirm("Redémarrage - S.v.p. confirmer:"); }
-    function lien(e) {
-      window.open(e.href, "_self");
-      return false;
-    }
   </script>
 </body>
 </html>

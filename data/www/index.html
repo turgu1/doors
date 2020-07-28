@@ -7,33 +7,33 @@
     <tbody>
       <tr class="#{ACTIVE_0}">
         <td class="label">#{NAME_0}:</td>
-        <td><a class="button button2 std" href="./open?door=0">Ouvre</a></td>
-        <td><a class="button button3 std" href="./close?door=0">Ferme</a></td>
+        <td><a class="button button2" onclick="window.open('./open?door=0', '_self'); return false;">Ouvre</a></td>
+        <td><a class="button button3" onclick="window.open('./close?door=0', '_self'); return false;">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_1}">
         <td class="label">#{NAME_1}:</td>
-        <td><a class="button button2 std" href="./open?door=1">Ouvre</a></td>
-        <td><a class="button button3 std" href="./close?door=1">Ferme</a></td>
+        <td><a class="button button2" onclick="window.open('./open?door=1', '_self'); return false;">Ouvre</a></td>
+        <td><a class="button button3" onclick="window.open('./close?door=1', '_self'); return false;">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_2}">
         <td class="label">#{NAME_2}:</td>
-        <td><a class="button button2 std" href="./open?door=2">Ouvre</a></td>
-        <td><a class="button button3 std" href="./close?door=2">Ferme</a></td>
+        <td><a class="button button2" onclick="window.open('./open?door=2', '_self'); return false;">Ouvre</a></td>
+        <td><a class="button button3" onclick="window.open('./close?door=2', '_self'); return false;">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_3}">
         <td class="label">#{NAME_3}:</td>
-        <td><a class="button button2 std" href="./open?door=3">Ouvre</a></td>
-        <td><a class="button button3 std" href="./close?door=3">Ferme</a></td>
+        <td><a class="button button2" onclick="window.open('./open?door=3', '_self'); return false;">Ouvre</a></td>
+        <td><a class="button button3" onclick="window.open('./close?door=3', '_self'); return false;">Ferme</a></td>
       </tr>
       <tr class="#{ACTIVE_4}">
         <td class="label">#{NAME_4}:</td>
-        <td><a class="button button2 std" href="./open?door=4">Ouvre</a></td>
-        <td><a class="button button3 std" href="./close?door=4">Ferme</a></td>
+        <td><a class="button button2" onclick="window.open('./open?door=4', '_self'); return false;">Ouvre</a></td>
+        <td><a class="button button3" onclick="window.open('./close?door=4', '_self'); return false;">Ferme</a></td>
       </tr>
     </tbody>
   </table>
   <hr/>
-  <a onclick="check_session();" ontouchend="check_session();" class="button button1 medium">Configuration</a>
+  <a onclick="if (check_session()) { window.open('./config', '_self'); return false;}" class="button button1 medium">Configuration</a>
   <div id="ask_form" style="display: none;">
     <br/><br/>
     <form action="./config" method="post">
@@ -49,10 +49,9 @@
       if ((sessionStorage.getItem("m") == null) || (sessionStorage.getItem("m") == "timeout")) {
         document.getElementById("ask_form").style.display = "block";
         document.getElementById("MP").focus();
+        return false;
       }
-      else {
-        window.location.href = "./config";
-      }
+      return true;
     }
     function set_session() {
       if (#{M} != null) {
@@ -66,15 +65,6 @@
         sessionStorage.removeItem("m");
       }
     }
-    function lien() {
-      window.location.href = this.href;
-      return true;
-    }
-
-    document.querySelectorAll(".std").forEach(function (item) {
-      item.addEventListener('click', lien);
-      item.addEventListener('touchend', lien);
-    });
   </script>
 </body>
 </html>
