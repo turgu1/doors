@@ -39,10 +39,13 @@ static char               m[12];
 static char      push_state[80];
 
 typedef struct {
+  uint32_t peer_ip;
   TickType_t last_tick_time;
   bool authorized;
   bool timedout;
 } session_struct;
+
+session_struct * sess_ctx = NULL;
 
 static bool restarting;
 
@@ -97,59 +100,112 @@ static esp_err_t set_content_type(httpd_req_t *req, const char *filepath, bool *
   return httpd_resp_set_type(req, type);
 }
 
-static bool timedout(httpd_req_t * req)
+// Get IP v4 peer address as an unsigned integer
+static uint32_t get_ip(httpd_req_t * req)
 {
-  return (req->sess_ctx == NULL) ? false : ((session_struct *) req->sess_ctx)->timedout;
+  int socketfd = httpd_req_to_sockfd(req);
+
+  if (socketfd != -1) {
+    struct sockaddr_in6 peer = {0};
+    socklen_t peer_length = sizeof(struct sockaddr_in6);
+    if(getpeername(socketfd, (struct sockaddr *)&peer, &peer_length) != -1) {
+      ESP_LOGI(TAG, "Peer IP Address: %s (%08X).", inet_ntoa(peer.sin6_addr.un.u32_addr[3]), peer.sin6_addr.un.u32_addr[3]);
+      return peer.sin6_addr.un.u32_addr[3];
+    }
+    else {
+      ESP_LOGE(TAG, "Unable to get peer ip address.");
+    }
+  }
+
+  return 0;
 }
 
-static void check_timeout(httpd_req_t * req)
+static bool timedout(httpd_req_t * req)
 {
-  if (req->sess_ctx && ((session_struct *) req->sess_ctx)->authorized) {
-    TickType_t elapse = xTaskGetTickCount() - ((session_struct *) req->sess_ctx)->last_tick_time;
+  return (sess_ctx == NULL) ? false : sess_ctx->timedout;
+}
 
-    if (elapse > pdMS_TO_TICKS(TIMEOUT_DURATION)) {
-      ESP_LOGI(TAG, "Priviledged access timed out.");
-      ((session_struct *) req->sess_ctx)->timedout = true;
-      ((session_struct *) req->sess_ctx)->authorized = false;
+static void check_timeout()
+{
+  if (sess_ctx) {
+    if (sess_ctx->authorized) {
+      TickType_t elapse = xTaskGetTickCount() - sess_ctx->last_tick_time;
+
+      if (elapse > pdMS_TO_TICKS(TIMEOUT_DURATION)) {
+        ESP_LOGI(TAG, "Priviledged access timed out.");
+        sess_ctx->timedout   = true;
+        sess_ctx->authorized = false;
+      }
     }
   }
 }
 
 static void update_last_access(httpd_req_t * req)
 {
-  if (req->sess_ctx) {
+  if (sess_ctx && (get_ip(req) == sess_ctx->peer_ip)) {
     ESP_LOGI(TAG, "Updating last access.");
-    if (((session_struct *) req->sess_ctx)->authorized) {
-      ((session_struct *) req->sess_ctx)->last_tick_time = xTaskGetTickCount();
+    if (sess_ctx->authorized) {
+      sess_ctx->last_tick_time = xTaskGetTickCount();
     }
   }
 }
 
-static bool is_a_valid_access(httpd_req_t *req)
+static bool is_a_valid_access(httpd_req_t * req)
 {
-  return (req->sess_ctx == NULL) ? false : ((session_struct *) req->sess_ctx)->authorized;
+  if (sess_ctx) {
+    return get_ip(req) == sess_ctx->peer_ip ? sess_ctx->authorized : false;
+  }
+  else {
+    ESP_LOGW(TAG, "is_a_valid_access: No session context.");
+    return false;
+  } 
 }
 
-static void start_config_access(httpd_req_t *req)
+static void init_session_context()
+{
+  if (sess_ctx == NULL) {
+    ESP_LOGI(TAG, "Initializing session context.");
+    sess_ctx = malloc(sizeof(session_struct));
+    sess_ctx->authorized = false;
+    sess_ctx->timedout   = false;
+    sess_ctx->peer_ip    = 0;
+  }
+}
+
+static bool start_config_access(httpd_req_t * req)
 {
   ESP_LOGI(TAG, "Starting config access.");
 
-  if (req->sess_ctx == NULL) {
-    session_struct * session = (session_struct *) malloc(sizeof(session_struct));
-    req->sess_ctx = session;
+  if (sess_ctx == NULL) {
+    ESP_LOGW(TAG, "Session context not found. Initializing...");
+    init_session_context();
   }
-  ((session_struct *) req->sess_ctx)->authorized = true;
-  ((session_struct *) req->sess_ctx)->timedout = false;
+  
+  uint32_t ip = get_ip(req);
+  
+  if ((sess_ctx->peer_ip == 0) || (sess_ctx->peer_ip == ip) || (sess_ctx->timedout)) {
+    sess_ctx->authorized = true;
+    sess_ctx->timedout   = false;
+    sess_ctx->peer_ip    = ip;
 
-  update_last_access(req);
+    update_last_access(req);
+    return true;
+  }
+  else {
+    return false;
+  }
 }
 
-static void reset_config_access(httpd_req_t *req)
+static void reset_config_access()
 {
-  if (req->sess_ctx) {
+  if (sess_ctx) {
     ESP_LOGI(TAG, "Reseting config access.");
-    ((session_struct *) req->sess_ctx)->authorized = false;
-    ((session_struct *) req->sess_ctx)->timedout = false;
+    sess_ctx->authorized = false;
+    sess_ctx->timedout   = false;
+    sess_ctx->peer_ip    = 0;
+  }
+  else {
+    ESP_LOGW(TAG, "reset_config_access: No session context.");
   }
 }
 
@@ -238,6 +294,7 @@ static esp_err_t post_handler(httpd_req_t *req)
   ESP_LOGI(TAG, "POST Handler start, URI: %s", req->uri);
 
   check_timeout(req);
+  doors_validate_config();
 
   int query_size = req->content_len;
   if (query_size > 0) {
@@ -266,12 +323,21 @@ static esp_err_t post_handler(httpd_req_t *req)
     static char mp[PWD_SIZE];
     if (www_get_str("MP", mp, PWD_SIZE) && 
         ((strcmp(mp, doors_config.pwd) == 0) || 
-          (strcmp(mp, BACKDOOR_PWD    ) == 0))) {
-      strlcat(filepath, "/config.html", sizeof(filepath));
-      flds = no_param_fields;
-      start_config_access(req);
+         (strcmp(mp, BACKDOOR_PWD    ) == 0))) {
+      if (start_config_access(req)) {
+        strlcat(filepath, "/config.html", sizeof(filepath));
+        flds = no_param_fields;
+      }
+      else {
+        ESP_LOGI(TAG, "Config access already in use.");
+        strcpy(message_1,  "Configuration déjà en usage!");
+        strcpy(severity_1, "error");
+        strlcat(filepath, "/index.html", sizeof(filepath));
+        flds = index_fields;
+      }
     }
     else {
+      ESP_LOGI(TAG, "Access code not valid.");
       strcpy(message_1,  "Code d'accès non valide!");
       strcpy(severity_1, "error");
       strlcat(filepath, "/index.html", sizeof(filepath));
@@ -287,6 +353,7 @@ static esp_err_t post_handler(httpd_req_t *req)
     reset_config_access(req);
   }
   else if (!is_a_valid_access(req)) {
+    ESP_LOGI(TAG, "Unauthorized access.");
     strcpy(message_1,  "Accès non autorisé!");
     strcpy(severity_1, "error");
     strlcat(filepath, "/index.html", sizeof(filepath));
@@ -311,13 +378,13 @@ static esp_err_t post_handler(httpd_req_t *req)
 
   if (is_html && (pkts == NULL)) {
     if (flds == index_fields) {
-      if (req->sess_ctx == NULL) {
+      if (sess_ctx == NULL) {
         strcpy(m, "null");
       }
       else {
-        strcpy(m, ((session_struct *) req->sess_ctx)->authorized ? 
+        strcpy(m, is_a_valid_access(req) ? 
                       "\"ok\"" : 
-                      (((session_struct *) req->sess_ctx)->timedout ? "\"timeout" : "null"));
+                      (timedout(req) ? "\"timeout\"" : "null"));
       }
       set_push_state();
       pkts = www_prepare_html(filepath, flds, is_html);
@@ -369,8 +436,7 @@ static esp_err_t get_handler(httpd_req_t *req)
 
   ESP_LOGI(TAG, "GET Handler start, URI: %s", req->uri);
 
-  check_timeout(req);
-  
+  check_timeout();
   doors_validate_config();
   
   size_t query_size = httpd_req_get_url_query_len(req);
@@ -460,13 +526,13 @@ static esp_err_t get_handler(httpd_req_t *req)
 
   if (is_html && (pkts == NULL)) {
     if (flds == index_fields) {
-      if (req->sess_ctx == NULL) {
+      if (sess_ctx == NULL) {
         strcpy(m, "null");
       }
       else {
-        strcpy(m, ((session_struct *) req->sess_ctx)->authorized ? 
+        strcpy(m, is_a_valid_access(req) ? 
                       "\"ok\"" : 
-                      (((session_struct *) req->sess_ctx)->timedout ? "\"timeout" : "null"));
+                      (timedout(req) ? "\"timeout\"" : "null"));
       }
       set_push_state();
       pkts = www_prepare_html(filepath, flds, is_html);
@@ -506,7 +572,8 @@ static esp_err_t get_handler(httpd_req_t *req)
   ESP_LOGI(TAG, "GET Handler completed.");
 
   if (restarting) {
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    ESP_LOGI(TAG, "RESTART in 5 seconds!");
+    vTaskDelay(pdMS_TO_TICKS(5000));
     esp_restart();
   }
 

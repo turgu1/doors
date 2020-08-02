@@ -32,10 +32,10 @@ L'interface du serveur WEB permet d'accéder à divers panneaux permettant de mo
 
 Une fois qu'on a reçu l'accès aux différents panneaux de configuration, un délais de 15 minutes sans activité (temps mort) avec le serveur web aura comme conséquence d'avoir à ré-entrer le mot de passe dans le panneau principal et de reprendre l'édition des paramètres.
 
-Il peut y avoir plusieurs utilisateur dans les panneaux de configuration. Si plus d'un utilisateur effectue des modifications au même panneau de config, c'est le dernière modification dans le temps qui sera sauvegardée.
+Il ne peut y avoir qu'un seul utilisateur dans les panneaux de configuration. Pour qu'un second appareil ait accès au panneaux de configuration, le délais de 15 minutes sans activité de la part du premier appareil doit être complété.
 
 Cette capacité est rudimentaire et ne sert qu'à protéger l'accès à la configuration de manière simple.
 
 # Après avoir modifié la configuration
 
-La majorité des paramètres présents dans la configuration ne sont chargés par l'application qu'au moment du démarrage (bootstrap). Il est donc important, après avoir modifié un ou plusieurs de ces paramètres, de redémarrer l'appareil en utilisant l'entrée de menu de redémarrage, via le bouton de reset ou en éteignant/rallumant l'appareil.
+La majorité des paramètres présents dans la configuration ne sont chargés par l'application qu'au moment du démarrage (bootstrap). Il est donc important, après avoir modifié un ou plusieurs de ces paramètres, de redémarrer l'appareil en utilisant l'entrée de menu de redémarrage ou via le bouton de reset ou en éteignant/rallumant l'appareil.
