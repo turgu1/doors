@@ -117,7 +117,7 @@ static bool wifi_init_ap()
 
 // ----- STA MODE ------------------------------------------------------------------
 
-#define ESP_MAXIMUM_RETRY  3
+#define ESP_MAXIMUM_RETRY  6
 
 static int s_retry_num = 0;
 
@@ -126,37 +126,43 @@ static void sta_event_handler(void            * arg,
                               int32_t           event_id, 
                               void            * event_data)
 {
-  if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_STA_START)) {
-    esp_wifi_connect();
-  } 
-  else if ((event_base == WIFI_EVENT) && (event_id == WIFI_EVENT_STA_DISCONNECTED)) {
-    if (wifi_first_start) {
-      if (s_retry_num < ESP_MAXIMUM_RETRY) {
-        vTaskDelay(pdMS_TO_TICKS(5000)); // wait 5 sec
+  ESP_LOGI(TAG, "STA Event, Base: %08x, Event: %d.", (unsigned int) event_base, event_id);
+
+  if (event_base == WIFI_EVENT) {
+    if (event_id == WIFI_EVENT_STA_START) {
+      esp_wifi_connect();
+    } 
+    else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+      if (wifi_first_start) {
+        if (s_retry_num < ESP_MAXIMUM_RETRY) {
+          vTaskDelay(pdMS_TO_TICKS(10000)); // wait 10 sec
+          ESP_LOGI(TAG, "retry to connect to the AP");
+          esp_wifi_connect();
+          s_retry_num++;
+        } 
+        else {
+          xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
+          ESP_LOGI(TAG,"connect to the AP fail");
+        }
+      }
+      else {
+        set_state_led_off();
+        ESP_LOGI(TAG, "Wifi Disconnected.");
+        vTaskDelay(pdMS_TO_TICKS(10000)); // wait 10 sec
         ESP_LOGI(TAG, "retry to connect to the AP");
         esp_wifi_connect();
-        s_retry_num++;
-      } 
-      else {
-        xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
-        ESP_LOGI(TAG,"connect to the AP fail");
       }
+    } 
+  }
+  else if (event_base == IP_EVENT) {
+    if (event_id == IP_EVENT_STA_GOT_IP) {
+      ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+      ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+      s_retry_num = 0;
+      xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
+      if (!wifi_first_start) set_state_led_on();
+      wifi_first_start = false;
     }
-    else {
-      set_state_led_off();
-      ESP_LOGI(TAG, "Wifi Disconnected.");
-      vTaskDelay(pdMS_TO_TICKS(10000)); // wait 10 sec
-      ESP_LOGI(TAG, "retry to connect to the AP");
-      esp_wifi_connect();
-    }
-  } 
-  else if ((event_base == IP_EVENT) && (event_id == IP_EVENT_STA_GOT_IP)) {
-    ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-    ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
-    s_retry_num = 0;
-    xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
-    if (!wifi_first_start) set_state_led_on();
-    wifi_first_start = false;
   }
 }
 
@@ -237,10 +243,10 @@ static bool wifi_init_sta(void)
     ESP_LOGE(TAG, "UNEXPECTED EVENT");
   }
 
-  ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   IP_EVENT_STA_GOT_IP, &sta_event_handler));
-  ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,    &sta_event_handler));
+  // ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &sta_event_handler));
+  // ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &sta_event_handler));
 
-  vEventGroupDelete(wifi_event_group);
+  // vEventGroupDelete(wifi_event_group);
 
   if (!connected) {
     ESP_ERROR_CHECK(esp_event_loop_delete_default());
