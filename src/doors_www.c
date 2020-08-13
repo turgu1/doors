@@ -12,6 +12,9 @@
 #define DOORS_WWW 1
 #include "doors_www.h"
 
+#define VERSION 1
+#include "version.h"
+
 #include "driver/gpio.h"
 #include "tcpip_adapter.h"
 #include "esp_http_server.h"
@@ -24,7 +27,7 @@
 static const char * TAG = "DOORS_WWW";
 #define CHECK(a, str, goto_tag, ...)                                           \
   if (!(a)) {                                                                  \
-    ESP_LOGE(TAG, "%s(%d): " str, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+    ESP_LOGE(TAG, "%s(%d): " str, __FUNCTION__, __LINE__, ##__VA_ARGS__);      \
     goto goto_tag;                                                             \
   }
 
@@ -56,7 +59,7 @@ www_field_struct no_param_fields [4] = {
   { NULL,                STR, "SEVERITY_1", severity_1    }
 };
 
-www_field_struct index_fields[16] = {
+www_field_struct index_fields[17] = {
   { &index_fields[1],  STR, "NAME_0",     door_name[0]    },
   { &index_fields[2],  STR, "NAME_1",     door_name[1]    },
   { &index_fields[3],  STR, "NAME_2",     door_name[2]    },
@@ -72,7 +75,8 @@ www_field_struct index_fields[16] = {
   { &index_fields[13], STR, "MSG_0",      message_0       },
   { &index_fields[14], STR, "MSG_1",      message_1       },
   { &index_fields[15], STR, "SEVERITY_0", severity_0      },
-  { NULL,              STR, "SEVERITY_1", severity_1      }
+  { &index_fields[16], STR, "SEVERITY_1", severity_1      },
+  { NULL,              STR, "VERSION",    version         }
 };
 
 #define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0)

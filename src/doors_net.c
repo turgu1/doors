@@ -58,23 +58,23 @@ static bool wifi_init_ap()
 
   tcpip_adapter_init();
 
-	//For using of static IP
-	tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP); // Don't run a DHCP client
+  //For using of static IP
+  tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP); // Don't run a DHCP client
 
-	//Set static IP
-	tcpip_adapter_ip_info_t ipInfo;
+  //Set static IP
+  tcpip_adapter_ip_info_t ipInfo;
 
-	inet_pton(AF_INET, DEFAULT_IP,   &ipInfo.ip);
-	inet_pton(AF_INET, DEFAULT_GW,   &ipInfo.gw);
-	inet_pton(AF_INET, DEFAULT_MASK, &ipInfo.netmask);
+  inet_pton(AF_INET, DEFAULT_IP,   &ipInfo.ip);
+  inet_pton(AF_INET, DEFAULT_GW,   &ipInfo.gw);
+  inet_pton(AF_INET, DEFAULT_MASK, &ipInfo.netmask);
 
-	tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo);
+  tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo);
 
   ESP_LOGI(TAG, "IP Address..........: "IPSTR, IP2STR(&ipInfo.ip));
   ESP_LOGI(TAG, "Subnet Mask.........: "IPSTR, IP2STR(&ipInfo.netmask));
   ESP_LOGI(TAG, "Default Gateway.....: "IPSTR, IP2STR(&ipInfo.gw));
 
-	tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+  tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
 
   ESP_ERROR_CHECK(esp_event_loop_create_default());
 
